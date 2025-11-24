@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Download, Share2, Save } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
 type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots';
@@ -32,7 +32,6 @@ interface Settings {
   showMargin: boolean;
   stavesPerPage: number;
   batchPaperTypes: PaperType[];
-  templateName: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -50,13 +49,11 @@ const DEFAULT_SETTINGS: Settings = {
   showMargin: true,
   stavesPerPage: 10,
   batchPaperTypes: [],
-  templateName: '',
 };
 
 export default function Home() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [templateUrl, setTemplateUrl] = useState<string>('');
 
   useEffect(() => {
     const saved = localStorage.getItem('freegridpaper-settings');
@@ -65,18 +62,6 @@ export default function Home() {
         setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
       } catch (e) {
         console.error('Failed to load settings:', e);
-      }
-    }
-
-    // Load from URL if present
-    const params = new URLSearchParams(window.location.search);
-    const template = params.get('template');
-    if (template) {
-      try {
-        const decoded = JSON.parse(atob(template));
-        setSettings({ ...DEFAULT_SETTINGS, ...decoded });
-      } catch (e) {
-        console.error('Failed to load template from URL:', e);
       }
     }
   }, []);
@@ -519,20 +504,6 @@ export default function Home() {
     }
   };
 
-  const generateTemplateUrl = () => {
-    const encoded = btoa(JSON.stringify(settings));
-    const url = `${window.location.origin}?template=${encoded}`;
-    setTemplateUrl(url);
-    navigator.clipboard.writeText(url);
-  };
-
-  const saveTemplate = () => {
-    if (!settings.templateName) return;
-    const templates = JSON.parse(localStorage.getItem('freegridpaper-templates') || '{}');
-    templates[settings.templateName] = settings;
-    localStorage.setItem('freegridpaper-templates', JSON.stringify(templates));
-  };
-
   const toggleBatchPaperType = (type: PaperType) => {
     updateSetting('batchPaperTypes', 
       settings.batchPaperTypes.includes(type)
@@ -599,6 +570,9 @@ export default function Home() {
 
               {settings.paperType === 'dot-grid' && (
                 <div className="space-y-4 pt-2">
+                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                    Perfect for bullet journaling, sketching, and planning. Adjust spacing for different grid densities and customize the dot appearance.
+                  </p>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Spacing (mm)</Label>
@@ -686,6 +660,9 @@ export default function Home() {
 
               {settings.paperType === 'isometric-dots' && (
                 <div className="space-y-4 pt-2">
+                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                    Ideal for 3D technical drawing, isometric sketches, and engineering diagrams. The hexagonal dot arrangement enables accurate perspective rendering.
+                  </p>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Spacing (mm)</Label>
@@ -773,6 +750,9 @@ export default function Home() {
 
               {settings.paperType === 'graph-paper' && (
                 <div className="space-y-4 pt-2">
+                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                    Precision grid paper for math, science, and technical work. Customize grid size, line weight, and color to match your needs.
+                  </p>
                   <div className="space-y-2">
                     <Label htmlFor="grid-size" className="text-sm">
                       Grid Size (mm)
@@ -870,8 +850,11 @@ export default function Home() {
                 </div>
               )}
 
-              {(settings.paperType === 'lined-paper' || settings.paperType === 'checklist') && (
+              {settings.paperType === 'lined-paper' && (
                 <div className="space-y-4 pt-2">
+                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                    Classic ruled paper for writing and note-taking. Choose between college and wide rule spacing, with optional margin guide line.
+                  </p>
                   <div className="space-y-2">
                     <Label className="text-sm">Line Height</Label>
                     <div className="flex gap-2">
@@ -910,6 +893,9 @@ export default function Home() {
 
               {settings.paperType === 'music-staff' && (
                 <div className="space-y-4 pt-2">
+                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                    Staff paper for composers and musicians. Adjust the number of staves per page to match your scoring needs and musical style.
+                  </p>
                   <div className="space-y-2">
                     <Label htmlFor="staves-count" className="text-sm">
                       Staves Per Page
@@ -935,6 +921,47 @@ export default function Home() {
                       min={8}
                       max={12}
                       data-testid="input-staves-count"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {settings.paperType === 'checklist' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                    Lined paper with checkbox squares for task lists and project planning. Quickly check off completed items while maintaining organized notes.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Line Height</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={settings.lineHeight === 7.1 ? 'default' : 'outline'}
+                        onClick={() => updateSetting('lineHeight', 7.1)}
+                        className="flex-1"
+                        data-testid="button-college-ruled-checklist"
+                      >
+                        College (7.1mm)
+                      </Button>
+                      <Button
+                        variant={settings.lineHeight === 8.7 ? 'default' : 'outline'}
+                        onClick={() => updateSetting('lineHeight', 8.7)}
+                        className="flex-1"
+                        data-testid="button-wide-ruled-checklist"
+                      >
+                        Wide (8.7mm)
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-margin-checklist" className="text-sm">
+                      Red Margin Line
+                    </Label>
+                    <Switch
+                      id="show-margin-checklist"
+                      checked={settings.showMargin}
+                      onCheckedChange={(checked) => updateSetting('showMargin', checked)}
+                      data-testid="switch-margin-checklist"
                     />
                   </div>
                 </div>
@@ -981,49 +1008,6 @@ export default function Home() {
                       <Download className="w-4 h-4 mr-2" />
                       Download Batch
                     </Button>
-                  </div>
-                </details>
-
-                <details className="space-y-2">
-                  <summary className="cursor-pointer font-medium text-sm text-primary hover:underline" data-testid="summary-templates">
-                    Templates & Sharing
-                  </summary>
-                  <div className="space-y-2 pt-2">
-                    <div className="flex gap-2">
-                      <Input
-                        value={settings.templateName}
-                        onChange={(e) => updateSetting('templateName', e.target.value)}
-                        placeholder="Template name"
-                        className="text-sm"
-                        data-testid="input-template-name"
-                      />
-                      <Button
-                        onClick={saveTemplate}
-                        disabled={!settings.templateName}
-                        size="sm"
-                        variant="outline"
-                        data-testid="button-save-template"
-                      >
-                        <Save className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Button
-                      onClick={generateTemplateUrl}
-                      className="w-full"
-                      size="sm"
-                      data-testid="button-share-template"
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Generate Shareable URL
-                    </Button>
-                    {templateUrl && (
-                      <Input
-                        value={templateUrl}
-                        readOnly
-                        className="text-xs"
-                        data-testid="input-template-url"
-                      />
-                    )}
                   </div>
                 </details>
               </div>
