@@ -146,7 +146,8 @@ export default function Home() {
     const size = Math.max(1, Math.min(3, settings.dotSize));
     const opacity = Math.max(0.1, Math.min(1, settings.dotOpacity));
 
-    ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+    const color = settings.useCustomColor ? hexToRgb(settings.customColor) : [0, 0, 0];
+    ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
 
     for (let y = spacing; y < height; y += spacing) {
       for (let x = spacing; x < width; x += spacing) {
@@ -162,7 +163,8 @@ export default function Home() {
     const size = Math.max(1, Math.min(3, settings.dotSize));
     const opacity = Math.max(0.1, Math.min(1, settings.dotOpacity));
     
-    ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+    const color = settings.useCustomColor ? hexToRgb(settings.customColor) : [0, 0, 0];
+    ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
     const hexSpacing = spacing * Math.sqrt(3) / 2;
 
     for (let y = 0; y < height; y += spacing * 1.5) {
@@ -268,7 +270,9 @@ export default function Home() {
 
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 0.5;
-      ctx.strokeRect(15, y - 4.5, 5, 5);
+      const checkboxSize = 4;
+      const checkboxY = y - lineHeight / 2 - checkboxSize / 2;
+      ctx.strokeRect(15, checkboxY, checkboxSize, checkboxSize);
       ctx.strokeStyle = '#cccccc';
       ctx.lineWidth = 0.5;
     }
@@ -492,7 +496,9 @@ export default function Home() {
 
       doc.setDrawColor(0, 0, 0);
       doc.setLineWidth(0.5);
-      doc.rect(15, y - 4.5, 5, 5);
+      const checkboxSize = 4;
+      const checkboxY = y - lineHeight / 2 - checkboxSize / 2;
+      doc.rect(15, checkboxY, checkboxSize, checkboxSize);
       doc.setDrawColor(204, 204, 204);
       doc.setLineWidth(0.5);
     }
@@ -570,7 +576,7 @@ export default function Home() {
 
               {settings.paperType === 'dot-grid' && (
                 <div className="space-y-4 pt-2">
-                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
                     Perfect for bullet journaling, sketching, and planning. Adjust spacing for different grid densities and customize the dot appearance.
                   </p>
                   <div className="space-y-2">
@@ -660,7 +666,7 @@ export default function Home() {
 
               {settings.paperType === 'isometric-dots' && (
                 <div className="space-y-4 pt-2">
-                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
                     Ideal for 3D technical drawing, isometric sketches, and engineering diagrams. The hexagonal dot arrangement enables accurate perspective rendering.
                   </p>
                   <div className="space-y-2">
@@ -750,7 +756,7 @@ export default function Home() {
 
               {settings.paperType === 'graph-paper' && (
                 <div className="space-y-4 pt-2">
-                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
                     Precision grid paper for math, science, and technical work. Customize grid size, line weight, and color to match your needs.
                   </p>
                   <div className="space-y-2">
@@ -852,7 +858,7 @@ export default function Home() {
 
               {settings.paperType === 'lined-paper' && (
                 <div className="space-y-4 pt-2">
-                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
                     Classic ruled paper for writing and note-taking. Choose between college and wide rule spacing, with optional margin guide line.
                   </p>
                   <div className="space-y-2">
@@ -893,7 +899,7 @@ export default function Home() {
 
               {settings.paperType === 'music-staff' && (
                 <div className="space-y-4 pt-2">
-                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
                     Staff paper for composers and musicians. Adjust the number of staves per page to match your scoring needs and musical style.
                   </p>
                   <div className="space-y-2">
@@ -928,7 +934,7 @@ export default function Home() {
 
               {settings.paperType === 'checklist' && (
                 <div className="space-y-4 pt-2">
-                  <p className="text-xs text-muted-foreground bg-sidebar-accent/50 p-2 rounded">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
                     Lined paper with checkbox squares for task lists and project planning. Quickly check off completed items while maintaining organized notes.
                   </p>
                   <div className="space-y-2">
