@@ -197,6 +197,11 @@
  */
 @layer utilities {
 
+  /* 25% larger font size for number displays */
+  .text-number {
+    @apply text-lg font-medium;
+  }
+
   /* Hide ugly search cancel button in Chrome until we can style it properly */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;

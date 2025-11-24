@@ -582,7 +582,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Spacing (mm)</Label>
-                      <span className="text-sm text-muted-foreground" data-testid="text-dot-spacing">
+                      <span className="text-number text-muted-foreground" data-testid="text-dot-spacing">
                         {settings.dotSpacing}mm
                       </span>
                     </div>
@@ -599,7 +599,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Dot Size (px)</Label>
-                      <span className="text-sm text-muted-foreground" data-testid="text-dot-size">
+                      <span className="text-number text-muted-foreground" data-testid="text-dot-size">
                         {settings.dotSize}px
                       </span>
                     </div>
@@ -616,7 +616,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Opacity</Label>
-                      <span className="text-sm text-muted-foreground" data-testid="text-dot-opacity">
+                      <span className="text-number text-muted-foreground" data-testid="text-dot-opacity">
                         {Math.round(settings.dotOpacity * 100)}%
                       </span>
                     </div>
@@ -672,7 +672,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Spacing (mm)</Label>
-                      <span className="text-sm text-muted-foreground" data-testid="text-isometric-spacing">
+                      <span className="text-number text-muted-foreground" data-testid="text-isometric-spacing">
                         {settings.dotSpacing}mm
                       </span>
                     </div>
@@ -689,7 +689,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Dot Size (px)</Label>
-                      <span className="text-sm text-muted-foreground" data-testid="text-isometric-size">
+                      <span className="text-number text-muted-foreground" data-testid="text-isometric-size">
                         {settings.dotSize}px
                       </span>
                     </div>
@@ -706,7 +706,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Opacity</Label>
-                      <span className="text-sm text-muted-foreground" data-testid="text-isometric-opacity">
+                      <span className="text-number text-muted-foreground" data-testid="text-isometric-opacity">
                         {Math.round(settings.dotOpacity * 100)}%
                       </span>
                     </div>
@@ -770,7 +770,7 @@ export default function Home() {
                       >
                         −
                       </Button>
-                      <span className="flex-1 text-center text-sm font-medium" data-testid="text-grid-size">
+                      <span className="flex-1 text-center text-number" data-testid="text-grid-size">
                         {settings.gridSize}
                       </span>
                       <Button
@@ -787,7 +787,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <Label className="text-sm">Line Weight</Label>
-                      <span className="text-sm text-muted-foreground" data-testid="text-line-weight">
+                      <span className="text-number text-muted-foreground" data-testid="text-line-weight">
                         {settings.lineWeight}
                       </span>
                     </div>
@@ -909,7 +909,7 @@ export default function Home() {
                       >
                         −
                       </Button>
-                      <span className="flex-1 text-center text-sm font-medium" data-testid="text-staves-count">
+                      <span className="flex-1 text-center text-number" data-testid="text-staves-count">
                         {settings.stavesPerPage}
                       </span>
                       <Button
