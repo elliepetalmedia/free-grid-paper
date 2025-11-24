@@ -149,8 +149,13 @@ export default function Home() {
     const color = settings.useCustomColor ? hexToRgb(settings.customColor) : [0, 0, 0];
     ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
 
-    const startX = spacing / 2;
-    const startY = spacing / 2;
+    const numCols = Math.floor(width / spacing);
+    const numRows = Math.floor(height / spacing);
+    const usedWidth = numCols * spacing;
+    const usedHeight = numRows * spacing;
+    const startX = (width - usedWidth) / 2 + spacing / 2;
+    const startY = (height - usedHeight) / 2 + spacing / 2;
+
     for (let y = startY; y < height; y += spacing) {
       for (let x = startX; x < width; x += spacing) {
         ctx.beginPath();
@@ -168,11 +173,19 @@ export default function Home() {
     const color = settings.useCustomColor ? hexToRgb(settings.customColor) : [0, 0, 0];
     ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
     const hexSpacing = spacing * Math.sqrt(3) / 2;
-    const startY = spacing * 0.75;
+    const vertSpacing = spacing * 1.5;
 
-    for (let y = startY; y < height; y += spacing * 1.5) {
-      for (let x = hexSpacing / 2; x < width; x += hexSpacing) {
-        const xOffset = (y / (spacing * 1.5)) % 2 === 1 ? hexSpacing / 2 : 0;
+    const numCols = Math.floor(width / hexSpacing);
+    const numRows = Math.floor(height / vertSpacing);
+    const usedWidth = numCols * hexSpacing;
+    const usedHeight = numRows * vertSpacing;
+    const startX = (width - usedWidth) / 2 + hexSpacing / 2;
+    const startY = (height - usedHeight) / 2;
+
+    for (let y = startY; y < height; y += vertSpacing) {
+      for (let x = startX; x < width; x += hexSpacing) {
+        const rowIndex = Math.round(y / vertSpacing);
+        const xOffset = rowIndex % 2 === 1 ? hexSpacing / 2 : 0;
         ctx.beginPath();
         ctx.arc(x + xOffset, y, size / 2, 0, Math.PI * 2);
         ctx.fill();
@@ -391,8 +404,13 @@ export default function Home() {
     doc.setFillColor(color[0], color[1], color[2]);
     (doc as any).setGState(new (doc as any).GState({ opacity }));
 
-    const startX = spacing / 2;
-    const startY = spacing / 2;
+    const numCols = Math.floor(width / spacing);
+    const numRows = Math.floor(height / spacing);
+    const usedWidth = numCols * spacing;
+    const usedHeight = numRows * spacing;
+    const startX = (width - usedWidth) / 2 + spacing / 2;
+    const startY = (height - usedHeight) / 2 + spacing / 2;
+
     for (let y = startY; y < height; y += spacing) {
       for (let x = startX; x < width; x += spacing) {
         doc.circle(x, y, size / 2, 'F');
@@ -410,11 +428,19 @@ export default function Home() {
     (doc as any).setGState(new (doc as any).GState({ opacity }));
     
     const hexSpacing = spacing * Math.sqrt(3) / 2;
-    const startY = spacing * 0.75;
+    const vertSpacing = spacing * 1.5;
 
-    for (let y = startY; y < height; y += spacing * 1.5) {
-      for (let x = hexSpacing / 2; x < width; x += hexSpacing) {
-        const xOffset = (y / (spacing * 1.5)) % 2 === 1 ? hexSpacing / 2 : 0;
+    const numCols = Math.floor(width / hexSpacing);
+    const numRows = Math.floor(height / vertSpacing);
+    const usedWidth = numCols * hexSpacing;
+    const usedHeight = numRows * vertSpacing;
+    const startX = (width - usedWidth) / 2 + hexSpacing / 2;
+    const startY = (height - usedHeight) / 2;
+
+    for (let y = startY; y < height; y += vertSpacing) {
+      for (let x = startX; x < width; x += hexSpacing) {
+        const rowIndex = Math.round(y / vertSpacing);
+        const xOffset = rowIndex % 2 === 1 ? hexSpacing / 2 : 0;
         doc.circle(x + xOffset, y, size / 2, 'F');
       }
     }
