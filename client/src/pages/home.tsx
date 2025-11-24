@@ -149,8 +149,10 @@ export default function Home() {
     const color = settings.useCustomColor ? hexToRgb(settings.customColor) : [0, 0, 0];
     ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
 
-    for (let y = spacing; y < height; y += spacing) {
-      for (let x = spacing; x < width; x += spacing) {
+    const startX = spacing / 2;
+    const startY = spacing / 2;
+    for (let y = startY; y < height; y += spacing) {
+      for (let x = startX; x < width; x += spacing) {
         ctx.beginPath();
         ctx.arc(x, y, size / 2, 0, Math.PI * 2);
         ctx.fill();
@@ -166,9 +168,10 @@ export default function Home() {
     const color = settings.useCustomColor ? hexToRgb(settings.customColor) : [0, 0, 0];
     ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
     const hexSpacing = spacing * Math.sqrt(3) / 2;
+    const startY = spacing * 0.75;
 
-    for (let y = 0; y < height; y += spacing * 1.5) {
-      for (let x = 0; x < width; x += hexSpacing) {
+    for (let y = startY; y < height; y += spacing * 1.5) {
+      for (let x = hexSpacing / 2; x < width; x += hexSpacing) {
         const xOffset = (y / (spacing * 1.5)) % 2 === 1 ? hexSpacing / 2 : 0;
         ctx.beginPath();
         ctx.arc(x + xOffset, y, size / 2, 0, Math.PI * 2);
@@ -388,8 +391,10 @@ export default function Home() {
     doc.setFillColor(color[0], color[1], color[2]);
     (doc as any).setGState(new (doc as any).GState({ opacity }));
 
-    for (let y = spacing; y < height; y += spacing) {
-      for (let x = spacing; x < width; x += spacing) {
+    const startX = spacing / 2;
+    const startY = spacing / 2;
+    for (let y = startY; y < height; y += spacing) {
+      for (let x = startX; x < width; x += spacing) {
         doc.circle(x, y, size / 2, 'F');
       }
     }
@@ -405,9 +410,10 @@ export default function Home() {
     (doc as any).setGState(new (doc as any).GState({ opacity }));
     
     const hexSpacing = spacing * Math.sqrt(3) / 2;
+    const startY = spacing * 0.75;
 
-    for (let y = 0; y < height; y += spacing * 1.5) {
-      for (let x = 0; x < width; x += hexSpacing) {
+    for (let y = startY; y < height; y += spacing * 1.5) {
+      for (let x = hexSpacing / 2; x < width; x += hexSpacing) {
         const xOffset = (y / (spacing * 1.5)) % 2 === 1 ? hexSpacing / 2 : 0;
         doc.circle(x + xOffset, y, size / 2, 'F');
       }
