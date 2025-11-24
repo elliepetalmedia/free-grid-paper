@@ -5,40 +5,58 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Download } from 'lucide-react';
+import { Download, Share2, Save } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
-type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist';
+type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots';
+type PageSize = 'A4' | 'Letter' | 'Legal';
+
+const PAGE_SIZES: Record<PageSize, { width: number; height: number }> = {
+  'A4': { width: 210, height: 297 },
+  'Letter': { width: 215.9, height: 279.4 },
+  'Legal': { width: 215.9, height: 355.6 },
+};
 
 interface Settings {
   paperType: PaperType;
+  pageSize: PageSize;
   dotSpacing: number;
   dotSize: number;
   dotOpacity: number;
   gridSize: number;
   lineWeight: number;
   gridColor: 'cyan' | 'gray' | 'black';
+  useCustomColor: boolean;
+  customColor: string;
   lineHeight: number;
   showMargin: boolean;
   stavesPerPage: number;
+  batchPaperTypes: PaperType[];
+  templateName: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   paperType: 'dot-grid',
+  pageSize: 'A4',
   dotSpacing: 5,
   dotSize: 2,
   dotOpacity: 0.5,
   gridSize: 5,
   lineWeight: 0.5,
   gridColor: 'gray',
+  useCustomColor: false,
+  customColor: '#000000',
   lineHeight: 7.1,
   showMargin: true,
   stavesPerPage: 10,
+  batchPaperTypes: [],
+  templateName: '',
 };
 
 export default function Home() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [templateUrl, setTemplateUrl] = useState<string>('');
 
   useEffect(() => {
     const saved = localStorage.getItem('freegridpaper-settings');
@@ -47,6 +65,18 @@ export default function Home() {
         setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
       } catch (e) {
         console.error('Failed to load settings:', e);
+      }
+    }
+
+    // Load from URL if present
+    const params = new URLSearchParams(window.location.search);
+    const template = params.get('template');
+    if (template) {
+      try {
+        const decoded = JSON.parse(atob(template));
+        setSettings({ ...DEFAULT_SETTINGS, ...decoded });
+      } catch (e) {
+        console.error('Failed to load template from URL:', e);
       }
     }
   }, []);
@@ -60,6 +90,8 @@ export default function Home() {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const getPageDimensions = () => PAGE_SIZES[settings.pageSize];
+
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -67,38 +99,61 @@ export default function Home() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const pageSize = getPageDimensions();
     const dpr = window.devicePixelRatio || 1;
-    const width = 210;
-    const height = 297;
     const scale = 2;
 
-    canvas.width = width * scale * dpr;
-    canvas.height = height * scale * dpr;
-    canvas.style.width = `${width * scale}px`;
-    canvas.style.height = `${height * scale}px`;
+    canvas.width = pageSize.width * scale * dpr;
+    canvas.height = pageSize.height * scale * dpr;
+    canvas.style.width = `${pageSize.width * scale}px`;
+    canvas.style.height = `${pageSize.height * scale}px`;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(scale * dpr, scale * dpr);
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, pageSize.width, pageSize.height);
 
     switch (settings.paperType) {
       case 'dot-grid':
-        drawDotGrid(ctx, width, height);
+        drawDotGrid(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'isometric-dots':
+        drawIsometricDots(ctx, pageSize.width, pageSize.height);
         break;
       case 'graph-paper':
-        drawGraphPaper(ctx, width, height);
+        drawGraphPaper(ctx, pageSize.width, pageSize.height);
         break;
       case 'lined-paper':
-        drawLinedPaper(ctx, width, height);
+        drawLinedPaper(ctx, pageSize.width, pageSize.height);
         break;
       case 'music-staff':
-        drawMusicStaff(ctx, width, height);
+        drawMusicStaff(ctx, pageSize.width, pageSize.height);
         break;
       case 'checklist':
-        drawChecklist(ctx, width, height);
+        drawChecklist(ctx, pageSize.width, pageSize.height);
         break;
     }
+  };
+
+  const getColorStyle = () => {
+    if (settings.useCustomColor) {
+      return settings.customColor;
+    }
+    const colorMap = {
+      cyan: '#38bdf8',
+      gray: '#666666',
+      black: '#000000',
+    };
+    return colorMap[settings.gridColor];
+  };
+
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? [
+      parseInt(result[1], 16),
+      parseInt(result[2], 16),
+      parseInt(result[3], 16)
+    ] : [0, 0, 0];
   };
 
   const drawDotGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -117,17 +172,29 @@ export default function Home() {
     }
   };
 
+  const drawIsometricDots = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const spacing = Math.max(5, Math.min(30, settings.dotSpacing));
+    const size = Math.max(1, Math.min(3, settings.dotSize));
+    const opacity = Math.max(0.1, Math.min(1, settings.dotOpacity));
+    
+    ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+    const hexSpacing = spacing * Math.sqrt(3) / 2;
+
+    for (let y = 0; y < height; y += spacing * 1.5) {
+      for (let x = 0; x < width; x += hexSpacing) {
+        const xOffset = (y / (spacing * 1.5)) % 2 === 1 ? hexSpacing / 2 : 0;
+        ctx.beginPath();
+        ctx.arc(x + xOffset, y, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  };
+
   const drawGraphPaper = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const gridSize = Math.max(1, Math.min(20, settings.gridSize));
     const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
     
-    const colorMap = {
-      cyan: '#38bdf8',
-      gray: '#666666',
-      black: '#000000',
-    };
-    
-    ctx.strokeStyle = colorMap[settings.gridColor];
+    ctx.strokeStyle = getColorStyle();
     ctx.lineWidth = weight;
 
     for (let x = 0; x <= width; x += gridSize) {
@@ -231,45 +298,106 @@ export default function Home() {
     }
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = (paperType?: PaperType) => {
+    const type = paperType || settings.paperType;
+    const pageSize = getPageDimensions();
+    const format = settings.pageSize.toLowerCase() as 'a4' | 'letter' | 'legal';
+    
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format
     });
 
-    const width = 210;
-    const height = 297;
+    const width = pageSize.width;
+    const height = pageSize.height;
 
-    switch (settings.paperType) {
+    // Save current settings
+    const savedPaperType = settings.paperType;
+    const tempSettings = { ...settings, paperType: type };
+
+    switch (type) {
       case 'dot-grid':
-        drawDotGridPDF(doc, width, height);
+        drawDotGridPDF(doc, width, height, tempSettings);
+        break;
+      case 'isometric-dots':
+        drawIsometricDotsPDF(doc, width, height, tempSettings);
         break;
       case 'graph-paper':
-        drawGraphPaperPDF(doc, width, height);
+        drawGraphPaperPDF(doc, width, height, tempSettings);
         break;
       case 'lined-paper':
-        drawLinedPaperPDF(doc, width, height);
+        drawLinedPaperPDF(doc, width, height, tempSettings);
         break;
       case 'music-staff':
-        drawMusicStaffPDF(doc, width, height);
+        drawMusicStaffPDF(doc, width, height, tempSettings);
         break;
       case 'checklist':
-        drawChecklistPDF(doc, width, height);
+        drawChecklistPDF(doc, width, height, tempSettings);
         break;
     }
 
-    const filename = `${settings.paperType}-${Date.now()}.pdf`;
+    const filename = `${type}-${settings.pageSize}-${Date.now()}.pdf`;
     doc.save(filename);
   };
 
-  const drawDotGridPDF = (doc: jsPDF, width: number, height: number) => {
-    const spacing = Math.max(5, Math.min(30, settings.dotSpacing));
-    const size = Math.max(1, Math.min(3, settings.dotSize));
-    const opacity = Math.max(0.1, Math.min(1, settings.dotOpacity));
+  const downloadBatchPDF = () => {
+    if (settings.batchPaperTypes.length === 0) return;
 
-    doc.setFillColor(0, 0, 0);
-    doc.setGState(new doc.GState({ opacity }));
+    const pageSize = getPageDimensions();
+    const format = settings.pageSize.toLowerCase() as 'a4' | 'letter' | 'legal';
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format
+    });
+
+    let isFirstPage = true;
+    const width = pageSize.width;
+    const height = pageSize.height;
+
+    settings.batchPaperTypes.forEach((type) => {
+      if (!isFirstPage) {
+        doc.addPage();
+      }
+      isFirstPage = false;
+
+      const tempSettings = { ...settings, paperType: type };
+
+      switch (type) {
+        case 'dot-grid':
+          drawDotGridPDF(doc, width, height, tempSettings);
+          break;
+        case 'isometric-dots':
+          drawIsometricDotsPDF(doc, width, height, tempSettings);
+          break;
+        case 'graph-paper':
+          drawGraphPaperPDF(doc, width, height, tempSettings);
+          break;
+        case 'lined-paper':
+          drawLinedPaperPDF(doc, width, height, tempSettings);
+          break;
+        case 'music-staff':
+          drawMusicStaffPDF(doc, width, height, tempSettings);
+          break;
+        case 'checklist':
+          drawChecklistPDF(doc, width, height, tempSettings);
+          break;
+      }
+    });
+
+    const filename = `batch-${settings.pageSize}-${Date.now()}.pdf`;
+    doc.save(filename);
+  };
+
+  const drawDotGridPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const spacing = Math.max(5, Math.min(30, opts.dotSpacing));
+    const size = Math.max(1, Math.min(3, opts.dotSize));
+    const opacity = Math.max(0.1, Math.min(1, opts.dotOpacity));
+
+    const color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
+    doc.setFillColor(color[0], color[1], color[2]);
+    (doc as any).setGState(new (doc as any).GState({ opacity }));
 
     for (let y = spacing; y < height; y += spacing) {
       for (let x = spacing; x < width; x += spacing) {
@@ -278,17 +406,41 @@ export default function Home() {
     }
   };
 
-  const drawGraphPaperPDF = (doc: jsPDF, width: number, height: number) => {
-    const gridSize = Math.max(1, Math.min(20, settings.gridSize));
-    const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
+  const drawIsometricDotsPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const spacing = Math.max(5, Math.min(30, opts.dotSpacing));
+    const size = Math.max(1, Math.min(3, opts.dotSize));
+    const opacity = Math.max(0.1, Math.min(1, opts.dotOpacity));
     
-    const colorMap = {
-      cyan: [56, 189, 248],
-      gray: [102, 102, 102],
-      black: [0, 0, 0],
-    };
+    const color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
+    doc.setFillColor(color[0], color[1], color[2]);
+    (doc as any).setGState(new (doc as any).GState({ opacity }));
     
-    const color = colorMap[settings.gridColor];
+    const hexSpacing = spacing * Math.sqrt(3) / 2;
+
+    for (let y = 0; y < height; y += spacing * 1.5) {
+      for (let x = 0; x < width; x += hexSpacing) {
+        const xOffset = (y / (spacing * 1.5)) % 2 === 1 ? hexSpacing / 2 : 0;
+        doc.circle(x + xOffset, y, size / 2, 'F');
+      }
+    }
+  };
+
+  const drawGraphPaperPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const gridSize = Math.max(1, Math.min(20, opts.gridSize));
+    const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
+    
+    let color;
+    if (opts.useCustomColor) {
+      color = hexToRgb(opts.customColor);
+    } else {
+      const colorMap: Record<string, number[]> = {
+        cyan: [56, 189, 248],
+        gray: [102, 102, 102],
+        black: [0, 0, 0],
+      };
+      color = colorMap[opts.gridColor];
+    }
+    
     doc.setDrawColor(color[0], color[1], color[2]);
     doc.setLineWidth(weight);
 
@@ -301,8 +453,8 @@ export default function Home() {
     }
   };
 
-  const drawLinedPaperPDF = (doc: jsPDF, width: number, height: number) => {
-    const lineHeight = Math.max(5, Math.min(15, settings.lineHeight));
+  const drawLinedPaperPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const lineHeight = Math.max(5, Math.min(15, opts.lineHeight));
     
     doc.setDrawColor(204, 204, 204);
     doc.setLineWidth(0.5);
@@ -311,15 +463,15 @@ export default function Home() {
       doc.line(0, y, width, y);
     }
 
-    if (settings.showMargin) {
+    if (opts.showMargin) {
       doc.setDrawColor(255, 0, 0);
       doc.setLineWidth(0.8);
       doc.line(30, 0, 30, height);
     }
   };
 
-  const drawMusicStaffPDF = (doc: jsPDF, width: number, height: number) => {
-    const staves = Math.min(Math.max(settings.stavesPerPage, 8), 12);
+  const drawMusicStaffPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const staves = Math.min(Math.max(opts.stavesPerPage, 8), 12);
     const staffHeight = 8;
     const lineSpacing = staffHeight / 4;
     const availableHeight = height - 40;
@@ -344,8 +496,8 @@ export default function Home() {
     }
   };
 
-  const drawChecklistPDF = (doc: jsPDF, width: number, height: number) => {
-    const lineHeight = Math.max(5, Math.min(15, settings.lineHeight));
+  const drawChecklistPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const lineHeight = Math.max(5, Math.min(15, opts.lineHeight));
     
     doc.setDrawColor(204, 204, 204);
     doc.setLineWidth(0.5);
@@ -360,11 +512,33 @@ export default function Home() {
       doc.setLineWidth(0.5);
     }
 
-    if (settings.showMargin) {
+    if (opts.showMargin) {
       doc.setDrawColor(255, 0, 0);
       doc.setLineWidth(0.8);
       doc.line(30, 0, 30, height);
     }
+  };
+
+  const generateTemplateUrl = () => {
+    const encoded = btoa(JSON.stringify(settings));
+    const url = `${window.location.origin}?template=${encoded}`;
+    setTemplateUrl(url);
+    navigator.clipboard.writeText(url);
+  };
+
+  const saveTemplate = () => {
+    if (!settings.templateName) return;
+    const templates = JSON.parse(localStorage.getItem('freegridpaper-templates') || '{}');
+    templates[settings.templateName] = settings;
+    localStorage.setItem('freegridpaper-templates', JSON.stringify(templates));
+  };
+
+  const toggleBatchPaperType = (type: PaperType) => {
+    updateSetting('batchPaperTypes', 
+      settings.batchPaperTypes.includes(type)
+        ? settings.batchPaperTypes.filter(t => t !== type)
+        : [...settings.batchPaperTypes, type]
+    );
   };
 
   return (
@@ -395,10 +569,30 @@ export default function Home() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="dot-grid" data-testid="option-dot-grid">Dot Grid</SelectItem>
+                    <SelectItem value="isometric-dots" data-testid="option-isometric-dots">Isometric Dots</SelectItem>
                     <SelectItem value="graph-paper" data-testid="option-graph-paper">Graph Paper</SelectItem>
                     <SelectItem value="lined-paper" data-testid="option-lined-paper">Lined Paper</SelectItem>
                     <SelectItem value="music-staff" data-testid="option-music-staff">Music Staff</SelectItem>
                     <SelectItem value="checklist" data-testid="option-checklist">Checklist</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="page-size" className="text-sm font-medium">
+                  Page Size
+                </Label>
+                <Select
+                  value={settings.pageSize}
+                  onValueChange={(value) => updateSetting('pageSize', value as PageSize)}
+                >
+                  <SelectTrigger id="page-size" className="h-10" data-testid="select-page-size">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A4" data-testid="option-a4">A4 (210×297mm)</SelectItem>
+                    <SelectItem value="Letter" data-testid="option-letter">Letter (8.5×11in)</SelectItem>
+                    <SelectItem value="Legal" data-testid="option-legal">Legal (8.5×14in)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -455,6 +649,125 @@ export default function Home() {
                       data-testid="slider-dot-opacity"
                     />
                   </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="use-custom-color" className="text-sm">
+                      Custom Color
+                    </Label>
+                    <Switch
+                      id="use-custom-color"
+                      checked={settings.useCustomColor}
+                      onCheckedChange={(checked) => updateSetting('useCustomColor', checked)}
+                      data-testid="switch-custom-color"
+                    />
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-color-hex"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.paperType === 'isometric-dots' && (
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Spacing (mm)</Label>
+                      <span className="text-sm text-muted-foreground" data-testid="text-isometric-spacing">
+                        {settings.dotSpacing}mm
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.dotSpacing]}
+                      onValueChange={([value]) => updateSetting('dotSpacing', value)}
+                      min={5}
+                      max={30}
+                      step={1}
+                      data-testid="slider-isometric-spacing"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Dot Size (px)</Label>
+                      <span className="text-sm text-muted-foreground" data-testid="text-isometric-size">
+                        {settings.dotSize}px
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.dotSize]}
+                      onValueChange={([value]) => updateSetting('dotSize', value)}
+                      min={1}
+                      max={3}
+                      step={0.5}
+                      data-testid="slider-isometric-size"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Opacity</Label>
+                      <span className="text-sm text-muted-foreground" data-testid="text-isometric-opacity">
+                        {Math.round(settings.dotOpacity * 100)}%
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.dotOpacity]}
+                      onValueChange={([value]) => updateSetting('dotOpacity', value)}
+                      min={0.1}
+                      max={1}
+                      step={0.1}
+                      data-testid="slider-isometric-opacity"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="use-custom-color-iso" className="text-sm">
+                      Custom Color
+                    </Label>
+                    <Switch
+                      id="use-custom-color-iso"
+                      checked={settings.useCustomColor}
+                      onCheckedChange={(checked) => updateSetting('useCustomColor', checked)}
+                      data-testid="switch-custom-color-iso"
+                    />
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-color-picker-iso"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-color-hex-iso"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -510,20 +823,50 @@ export default function Home() {
                     <Label htmlFor="grid-color" className="text-sm">
                       Grid Color
                     </Label>
-                    <Select
-                      value={settings.gridColor}
-                      onValueChange={(value) => updateSetting('gridColor', value as 'cyan' | 'gray' | 'black')}
-                    >
-                      <SelectTrigger id="grid-color" className="h-10" data-testid="select-grid-color">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cyan" data-testid="option-color-cyan">Cyan</SelectItem>
-                        <SelectItem value="gray" data-testid="option-color-gray">Gray</SelectItem>
-                        <SelectItem value="black" data-testid="option-color-black">Black</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={settings.useCustomColor ? 'custom' : settings.gridColor}
+                        onValueChange={(value) => {
+                          if (value === 'custom') {
+                            updateSetting('useCustomColor', true);
+                          } else {
+                            updateSetting('useCustomColor', false);
+                            updateSetting('gridColor', value as 'cyan' | 'gray' | 'black');
+                          }
+                        }}
+                      >
+                        <SelectTrigger id="grid-color" className="h-10" data-testid="select-grid-color">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cyan" data-testid="option-color-cyan">Cyan</SelectItem>
+                          <SelectItem value="gray" data-testid="option-color-gray">Gray</SelectItem>
+                          <SelectItem value="black" data-testid="option-color-black">Black</SelectItem>
+                          <SelectItem value="custom" data-testid="option-color-custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-grid-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-grid-color-hex"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -597,15 +940,93 @@ export default function Home() {
                 </div>
               )}
 
-              <Button
-                onClick={downloadPDF}
-                className="w-full h-12 text-base"
-                size="lg"
-                data-testid="button-download"
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Download PDF
-              </Button>
+              <div className="space-y-3 pt-2 border-t border-sidebar-border">
+                <Button
+                  onClick={() => downloadPDF()}
+                  className="w-full h-12 text-base"
+                  size="lg"
+                  data-testid="button-download"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Download PDF
+                </Button>
+
+                <details className="space-y-2">
+                  <summary className="cursor-pointer font-medium text-sm text-primary hover:underline" data-testid="summary-batch-export">
+                    Batch Export
+                  </summary>
+                  <div className="space-y-2 pt-2">
+                    {(['dot-grid', 'isometric-dots', 'graph-paper', 'lined-paper', 'music-staff', 'checklist'] as PaperType[]).map((type) => (
+                      <div key={type} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`batch-${type}`}
+                          checked={settings.batchPaperTypes.includes(type)}
+                          onChange={() => toggleBatchPaperType(type)}
+                          className="w-4 h-4 rounded border-primary cursor-pointer"
+                          data-testid={`checkbox-batch-${type}`}
+                        />
+                        <label htmlFor={`batch-${type}`} className="text-sm cursor-pointer">
+                          {type === 'dot-grid' ? 'Dot Grid' : type === 'isometric-dots' ? 'Isometric Dots' : type === 'graph-paper' ? 'Graph Paper' : type === 'lined-paper' ? 'Lined Paper' : type === 'music-staff' ? 'Music Staff' : 'Checklist'}
+                        </label>
+                      </div>
+                    ))}
+                    <Button
+                      onClick={downloadBatchPDF}
+                      disabled={settings.batchPaperTypes.length === 0}
+                      className="w-full mt-2"
+                      size="sm"
+                      data-testid="button-batch-download"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Batch
+                    </Button>
+                  </div>
+                </details>
+
+                <details className="space-y-2">
+                  <summary className="cursor-pointer font-medium text-sm text-primary hover:underline" data-testid="summary-templates">
+                    Templates & Sharing
+                  </summary>
+                  <div className="space-y-2 pt-2">
+                    <div className="flex gap-2">
+                      <Input
+                        value={settings.templateName}
+                        onChange={(e) => updateSetting('templateName', e.target.value)}
+                        placeholder="Template name"
+                        className="text-sm"
+                        data-testid="input-template-name"
+                      />
+                      <Button
+                        onClick={saveTemplate}
+                        disabled={!settings.templateName}
+                        size="sm"
+                        variant="outline"
+                        data-testid="button-save-template"
+                      >
+                        <Save className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={generateTemplateUrl}
+                      className="w-full"
+                      size="sm"
+                      data-testid="button-share-template"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Generate Shareable URL
+                    </Button>
+                    {templateUrl && (
+                      <Input
+                        value={templateUrl}
+                        readOnly
+                        className="text-xs"
+                        data-testid="input-template-url"
+                      />
+                    )}
+                  </div>
+                </details>
+              </div>
             </div>
           </div>
         </aside>
@@ -630,6 +1051,11 @@ export default function Home() {
         <h2 className="text-2xl font-bold text-foreground">Benefits of Dot Grid for Bullet Journaling</h2>
         <p className="text-base leading-relaxed text-foreground/90">
           Dot grid paper offers the structure of graph paper with the cleanliness of blank pages. Perfect for UX sketching, calligraphy, and planning.
+        </p>
+        
+        <h2 className="text-2xl font-bold text-foreground">Isometric Dots for Technical Drawing</h2>
+        <p className="text-base leading-relaxed text-foreground/90">
+          Isometric dot grids are perfect for 3D sketching, technical drawing, and engineering diagrams. The hexagonal arrangement enables accurate perspective drawing.
         </p>
         
         <h2 className="text-2xl font-bold text-foreground">How to Print</h2>
