@@ -553,7 +553,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex flex-col md:flex-row min-h-screen">
-        <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-6 md:h-screen md:overflow-y-auto">
+        <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-4 md:p-6 md:h-screen md:overflow-y-auto">
           <div className="space-y-6">
             <div>
               <h1 className="text-2xl font-bold text-primary mb-2" data-testid="text-app-title">
@@ -680,7 +680,7 @@ export default function Home() {
                         type="color"
                         value={settings.customColor}
                         onChange={(e) => updateSetting('customColor', e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer"
+                        className="w-16 h-12 rounded cursor-pointer flex-shrink-0"
                         data-testid="input-color-picker"
                       />
                       <Input
@@ -1015,19 +1015,19 @@ export default function Home() {
                   </summary>
                   <div className="space-y-2 pt-2">
                     {(['dot-grid', 'isometric-dots', 'graph-paper', 'lined-paper', 'music-staff', 'checklist'] as PaperType[]).map((type) => (
-                      <div key={type} className="flex items-center gap-2">
+                      <label key={type} className="flex items-center gap-3 cursor-pointer py-2 px-2 rounded hover-elevate">
                         <input
                           type="checkbox"
                           id={`batch-${type}`}
                           checked={settings.batchPaperTypes.includes(type)}
                           onChange={() => toggleBatchPaperType(type)}
-                          className="w-4 h-4 rounded border-primary cursor-pointer"
+                          className="w-5 h-5 rounded border-primary cursor-pointer"
                           data-testid={`checkbox-batch-${type}`}
                         />
-                        <label htmlFor={`batch-${type}`} className="text-sm cursor-pointer">
+                        <span className="text-sm">
                           {type === 'dot-grid' ? 'Dot Grid' : type === 'isometric-dots' ? 'Isometric Dots' : type === 'graph-paper' ? 'Graph Paper' : type === 'lined-paper' ? 'Lined Paper' : type === 'music-staff' ? 'Music Staff' : 'Checklist'}
-                        </label>
-                      </div>
+                        </span>
+                      </label>
                     ))}
                     <Button
                       onClick={downloadBatchPDF}
@@ -1046,8 +1046,8 @@ export default function Home() {
           </div>
         </aside>
 
-        <main className="flex-1 p-4 md:p-8 flex items-center justify-center bg-background">
-          <div className="w-full max-w-2xl">
+        <main className="flex-1 p-2 md:p-8 flex items-center justify-center bg-background overflow-x-auto">
+          <div className="w-full min-w-fit max-w-4xl px-2 md:px-0">
             <canvas
               ref={canvasRef}
               className="w-full h-auto rounded shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
@@ -1057,7 +1057,7 @@ export default function Home() {
         </main>
       </div>
 
-      <article className="max-w-3xl mx-auto px-6 py-12 space-y-6">
+      <article className="max-w-3xl mx-auto px-4 md:px-6 py-12 space-y-6">
         <h2 className="text-2xl font-bold text-foreground">Why Use Printable Grid Paper?</h2>
         <p className="text-base leading-relaxed text-foreground/90">
           In a digital world, the tactile experience of writing on paper remains superior for memory retention. FreeGridPaper.com allows you to generate custom, high-resolution stationery instantly.
@@ -1080,27 +1080,27 @@ export default function Home() {
       </article>
 
       <footer className="bg-sidebar border-t border-sidebar-border py-8">
-        <div className="max-w-3xl mx-auto px-6">
-          <nav className="flex flex-wrap justify-center gap-4 mb-4">
+        <div className="max-w-3xl mx-auto px-4 md:px-6">
+          <nav className="flex flex-col sm:flex-row flex-wrap justify-center gap-2 sm:gap-4 mb-4">
             <a
               href="/pages/about.html"
-              className="text-primary hover:underline"
+              className="text-primary hover:underline text-center"
               data-testid="link-about"
             >
               About
             </a>
-            <span className="text-muted-foreground">|</span>
+            <span className="text-muted-foreground hidden sm:inline">|</span>
             <a
               href="/pages/contact.html"
-              className="text-primary hover:underline"
+              className="text-primary hover:underline text-center"
               data-testid="link-contact"
             >
               Contact
             </a>
-            <span className="text-muted-foreground">|</span>
+            <span className="text-muted-foreground hidden sm:inline">|</span>
             <a
               href="/pages/privacy.html"
-              className="text-primary hover:underline"
+              className="text-primary hover:underline text-center"
               data-testid="link-privacy"
             >
               Privacy
