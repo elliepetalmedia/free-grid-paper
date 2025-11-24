@@ -760,32 +760,28 @@ export default function Home() {
                     Precision grid paper for math, science, and technical work. Customize grid size, line weight, and color to match your needs.
                   </p>
                   <div className="space-y-2">
-                    <Label htmlFor="grid-size" className="text-sm">
-                      Grid Size (mm)
-                    </Label>
-                    <Input
-                      id="grid-size"
-                      type="number"
-                      value={settings.gridSize}
-                      onChange={(e) => {
-                        const value = parseFloat(e.target.value);
-                        if (isNaN(value) || value <= 0) {
-                          updateSetting('gridSize', 5);
-                        } else {
-                          updateSetting('gridSize', Math.min(20, value));
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const value = parseFloat(e.target.value);
-                        if (isNaN(value) || value <= 0) {
-                          updateSetting('gridSize', 5);
-                        }
-                      }}
-                      min={1}
-                      max={20}
-                      step={0.5}
-                      data-testid="input-grid-size"
-                    />
+                    <Label className="text-sm">Grid Size (mm)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('gridSize', Math.max(1, settings.gridSize - 0.5))}
+                        data-testid="button-grid-size-minus"
+                      >
+                        −
+                      </Button>
+                      <span className="flex-1 text-center text-sm font-medium" data-testid="text-grid-size">
+                        {settings.gridSize}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('gridSize', Math.min(20, settings.gridSize + 0.5))}
+                        data-testid="button-grid-size-plus"
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -903,31 +899,28 @@ export default function Home() {
                     Staff paper for composers and musicians. Adjust the number of staves per page to match your scoring needs and musical style.
                   </p>
                   <div className="space-y-2">
-                    <Label htmlFor="staves-count" className="text-sm">
-                      Staves Per Page
-                    </Label>
-                    <Input
-                      id="staves-count"
-                      type="number"
-                      value={settings.stavesPerPage}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (isNaN(value) || value < 8 || value > 12) {
-                          updateSetting('stavesPerPage', 10);
-                        } else {
-                          updateSetting('stavesPerPage', value);
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (isNaN(value) || value < 8 || value > 12) {
-                          updateSetting('stavesPerPage', 10);
-                        }
-                      }}
-                      min={8}
-                      max={12}
-                      data-testid="input-staves-count"
-                    />
+                    <Label className="text-sm">Staves Per Page</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('stavesPerPage', Math.max(8, settings.stavesPerPage - 1))}
+                        data-testid="button-staves-minus"
+                      >
+                        −
+                      </Button>
+                      <span className="flex-1 text-center text-sm font-medium" data-testid="text-staves-count">
+                        {settings.stavesPerPage}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('stavesPerPage', Math.min(12, settings.stavesPerPage + 1))}
+                        data-testid="button-staves-plus"
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
