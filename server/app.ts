@@ -1,4 +1,5 @@
 import { type Server } from "node:http";
+import path from "path";
 
 import express, {
   type Express,
@@ -33,6 +34,8 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+app.use('/pages', express.static(path.join(process.cwd(), 'client/public/pages')));
 
 app.use((req, res, next) => {
   const start = Date.now();
