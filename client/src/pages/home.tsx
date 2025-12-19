@@ -148,12 +148,24 @@ export default function Home() {
   const getPageDimensions = () => PAGE_SIZES[settings.pageSize];
 
   const getCanvasScale = () => {
+    return 1.5;
+  };
+
+  const getPreviewDimensions = () => {
     const pageSize = getPageDimensions();
-    const maxDimension = Math.max(pageSize.width, pageSize.height);
-    if (maxDimension > 600) {
-      return Math.max(0.3, 400 / maxDimension);
+    const scale = getCanvasScale();
+    const maxPreviewHeight = 500;
+    const maxPreviewWidth = 400;
+    
+    let previewWidth = pageSize.width * scale;
+    let previewHeight = pageSize.height * scale;
+    
+    if (previewHeight > maxPreviewHeight || previewWidth > maxPreviewWidth) {
+      previewWidth = Math.min(previewWidth, maxPreviewWidth);
+      previewHeight = Math.min(previewHeight, maxPreviewHeight);
     }
-    return 2;
+    
+    return { previewWidth, previewHeight, fullWidth: pageSize.width * scale, fullHeight: pageSize.height * scale };
   };
 
   const drawCanvas = () => {
@@ -1942,14 +1954,31 @@ export default function Home() {
           </div>
         </aside>
 
-        <main className={`flex-1 p-2 md:p-8 flex items-center justify-center bg-background ${isLargeFormat ? 'overflow-auto' : 'overflow-x-auto'}`}>
-          <div className={`${isLargeFormat ? 'w-full h-full flex items-center justify-center' : 'w-full min-w-fit max-w-4xl'} px-2 md:px-0`}>
-            <canvas
-              ref={canvasRef}
-              className="rounded shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
-              style={isLargeFormat ? { maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' } : {}}
-              data-testid="canvas-preview"
-            />
+        <main className="flex-1 p-2 md:p-8 flex flex-col items-center justify-center bg-background overflow-hidden">
+          <div className="flex flex-col items-center gap-3 w-full max-w-4xl px-2 md:px-0">
+            <div className="text-center">
+              <span className="text-sm font-medium text-muted-foreground" data-testid="text-paper-size-label">
+                {PAGE_SIZES[settings.pageSize].label}
+              </span>
+              {isLargeFormat && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Scroll to see more of the pattern
+                </p>
+              )}
+            </div>
+            <div 
+              className="overflow-auto rounded shadow-[0_10px_30px_rgba(0,0,0,0.5)] bg-white"
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: isLargeFormat ? '60vh' : '75vh',
+              }}
+              data-testid="canvas-container"
+            >
+              <canvas
+                ref={canvasRef}
+                data-testid="canvas-preview"
+              />
+            </div>
           </div>
         </main>
       </div>
