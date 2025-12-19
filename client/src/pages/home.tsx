@@ -983,9 +983,16 @@ export default function Home() {
     );
   };
 
-  const applyInkSaver = () => {
-    updateSetting('useCustomColor', true);
-    updateSetting('customColor', '#e0e0e0');
+  const isInkSaverActive = settings.useCustomColor && settings.customColor === '#e0e0e0';
+
+  const toggleInkSaver = () => {
+    if (isInkSaverActive) {
+      updateSetting('useCustomColor', false);
+      updateSetting('customColor', '#000000');
+    } else {
+      updateSetting('useCustomColor', true);
+      updateSetting('customColor', '#e0e0e0');
+    }
   };
 
   const isLargeFormat = ['A0', 'A1', 'A2', 'ArchC', 'ArchD', 'ArchE'].includes(settings.pageSize);
@@ -1099,13 +1106,13 @@ export default function Home() {
 
               <div className="flex gap-2">
                 <Button
-                  variant="outline"
+                  variant={isInkSaverActive ? 'default' : 'outline'}
                   size="sm"
-                  onClick={applyInkSaver}
+                  onClick={toggleInkSaver}
                   className="flex-1"
                   data-testid="button-ink-saver"
                 >
-                  Ink Saver (Light Grey)
+                  {isInkSaverActive ? 'Ink Saver On' : 'Ink Saver (Light Grey)'}
                 </Button>
               </div>
 
