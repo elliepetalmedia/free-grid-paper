@@ -2,9 +2,18 @@
 
 ## Overview
 
-FreeGridPaper is a browser-based utility application that generates customizable printable stationery including dot grids, graph paper, lined paper, music staves, and checklists. The application runs entirely client-side with no backend processing, generating vector PDFs directly in the browser using jsPDF. All user preferences are persisted locally using localStorage.
+FreeGridPaper is a browser-based utility application that generates customizable printable stationery including dot grids, graph paper, lined paper, music staves, checklists, hexagon grids, knitting/cross-stitch patterns, and calligraphy guides. The application runs entirely client-side with no backend processing, generating vector PDFs directly in the browser using jsPDF. All user preferences are persisted locally using localStorage.
 
 The application features a "Blueprint Dark" design theme with a professional, engineering-inspired aesthetic. It provides real-time canvas preview of paper configurations and exports high-resolution vector PDFs suitable for accurate printing.
+
+## Quick Downloads Feature
+
+The navigation bar provides "Quick Downloads" - pre-configured paper presets that load instantly:
+- Graph Paper, Dot Grid, Hexagon (D&D), Music Staff, Engineering, Poster Size, Poster Hex (D&D)
+- Each preset has its own SEO-optimized route (/graph, /dot-grid, /hex-paper, etc.)
+- Preset pages show a "Ready to Print" banner with one-click download
+- When user modifies any setting on a preset page, the app navigates to "/" (main generator) and the banner disappears
+- This creates clear separation between quick preset downloads and custom paper generation
 
 ## User Preferences
 
@@ -45,12 +54,16 @@ Preferred communication style: Simple, everyday language.
 - All PDF generation happens in the browser using jsPDF library
 - Uses vector commands (`doc.line`, `doc.circle`) rather than rasterized images
 - Ensures accurate sizing when printed at 100% scale
-- Supports multiple paper types with distinct rendering logic:
+- Supports 9 paper types with distinct rendering logic:
   - Dot Grid: Configurable spacing, size, and opacity
+  - Isometric Dots: 60-degree angled dot pattern for 3D sketching
   - Graph Paper: Customizable grid size, line weight, and color
+  - Hexagon Grid: For D&D/tabletop gaming with size presets
   - Lined Paper: Adjustable line height with optional margin lines
   - Music Staff: Multiple staves with treble clef rendering
   - Checklist: Lined paper with checkbox squares
+  - Knitting/Cross-Stitch: Rectangular grid matching gauge ratios
+  - Calligraphy: Horizontal lines with angled slant guides
 
 ### State Management
 
@@ -58,6 +71,8 @@ Preferred communication style: Simple, everyday language.
 - All slider and control values automatically saved to localStorage
 - Settings key: 'freegridpaper-settings'
 - Merged with default settings on load to handle missing properties
+- Quick Download presets always load fresh (ignore saved settings)
+- Settings only persist when on main generator page ("/")
 - No server-side state or user accounts
 
 **Application State:**
@@ -84,6 +99,8 @@ Preferred communication style: Simple, everyday language.
 - Client-side routing handled by Wouter
 - Server falls back to index.html for SPA behavior
 - Static pages served directly via Express static middleware
+- Quick Download preset routes: /graph, /dot-grid, /hex-paper, /music-staff, /engineering, /poster-size, /poster-hex, /calligraphy, /knitting
+- FAQ page at /faq with collapsible accordion sections
 
 ### Database Schema
 

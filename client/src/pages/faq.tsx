@@ -9,8 +9,12 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
+    question: "What are the Quick Download buttons in the navigation bar?",
+    answer: "The Quick Downloads bar at the top provides instant access to our most popular pre-configured paper types. Click any button (Graph Paper, Dot Grid, Hexagon, etc.) to load that preset with optimized settings and see a 'Ready to Print' banner. Simply click Download PDF to get your paper immediately. If you want to customize settings, any change will take you to the main generator where the banner disappears and you have full control."
+  },
+  {
     question: "How do I generate and download a PDF?",
-    answer: "Select your preferred paper type from the dropdown menu, customize the settings to your liking, then click the 'Download PDF' button. The PDF will be generated instantly and downloaded to your device."
+    answer: "There are two ways: 1) Use the Quick Downloads bar for instant pre-configured paper, or 2) Use the sidebar controls to customize your paper type, size, and settings, then click 'Download PDF'. The PDF will be generated instantly and downloaded to your device."
   },
   {
     question: "What paper types are available?",
@@ -66,7 +70,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Can I save my settings?",
-    answer: "Yes! Your settings are automatically saved in your browser. When you return to the site, your previous settings will be restored. Note that settings are stored locally and won't transfer between different browsers or devices."
+    answer: "Yes! Your settings are automatically saved in your browser when you're on the main generator page. When you return to the site, your previous settings will be restored. Note that Quick Download presets always load with their default optimized settings, and settings are stored locally so they won't transfer between different browsers or devices."
   },
   {
     question: "The preview looks small for large paper sizes. How can I see the pattern?",
