@@ -1038,10 +1038,8 @@ export default function Home() {
                 <h1 className="text-2xl font-bold text-primary" data-testid="text-app-title">
                   {pageH1}
                 </h1>
-                <Link href="/faq">
-                  <Button variant="ghost" size="icon" data-testid="button-faq">
-                    <HelpCircle className="h-5 w-5" />
-                  </Button>
+                <Link href="/faq" className="text-sm text-primary hover:underline" data-testid="link-faq-sidebar">
+                  FAQ
                 </Link>
               </div>
               <p className="text-sm text-muted-foreground">

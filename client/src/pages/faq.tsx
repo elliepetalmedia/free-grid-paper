@@ -22,7 +22,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "How do I use the Batch Export feature?",
-    answer: "Click the 'Batch Export' button in the sidebar. Check the boxes next to the paper types you want to include, then click 'Download Batch PDF'. All selected paper types will be combined into a single PDF file with each type on its own page."
+    answer: "Click the 'Batch Export' section in the sidebar. Check the boxes next to the paper types you want to include, then click 'Download Batch PDF'. All selected paper types will be combined into a single PDF file with each type on its own page."
   },
   {
     question: "What does the Ink Saver option do?",
@@ -53,7 +53,7 @@ const faqs: FAQItem[] = [
     answer: "Select 'Hexagon Grid' paper type. The default 1 inch hex size is standard for miniature gaming. For larger maps, try Arch D or Arch E paper sizes. You can adjust hex size using the presets (1 inch, 3/4 inch, 1/2 inch) or enter a custom size."
   },
   {
-    question: "What's the difference between regular Graph Paper and Isometric Dots?",
+    question: "What's the difference between Graph Paper and Isometric Dots?",
     answer: "Graph Paper has a square grid ideal for 2D drawings, charts, and math work. Isometric Dots are arranged in a hexagonal pattern at 60-degree angles, perfect for drawing 3D objects with proper perspective (isometric projection)."
   },
   {
@@ -84,52 +84,60 @@ const faqs: FAQItem[] = [
 
 export default function FAQ() {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-sidebar p-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
+    <div className="min-h-screen bg-sidebar text-foreground">
+      <header className="sticky top-0 z-10 border-b border-sidebar-border bg-sidebar/95 backdrop-blur p-4">
+        <div className="max-w-3xl mx-auto flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back-home">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="outline" size="sm" data-testid="button-back-home">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Generator
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">Frequently Asked Questions</h1>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-lg text-muted-foreground mb-8">
-          Find answers to common questions about using FreeGridPaper to create custom printable paper.
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-primary mb-2">
+          Frequently Asked Questions
+        </h1>
+        <p className="text-lg text-foreground/80 mb-8">
+          Find answers to common questions about using FreeGridPaper.
         </p>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {faqs.map((faq, index) => (
-            <div 
+            <details 
               key={index} 
-              className="bg-card border rounded-lg p-6"
+              className="group border border-sidebar-border rounded-lg bg-background/50"
               data-testid={`faq-item-${index}`}
             >
-              <h2 className="text-xl font-semibold text-foreground mb-3">
+              <summary className="flex items-center justify-between cursor-pointer p-5 text-lg font-semibold text-foreground hover:text-primary transition-colors">
                 {faq.question}
-              </h2>
-              <p className="text-base leading-relaxed text-foreground/90">
-                {faq.answer}
-              </p>
-            </div>
+                <span className="ml-4 text-primary group-open:rotate-180 transition-transform">
+                  &#9662;
+                </span>
+              </summary>
+              <div className="px-5 pb-5">
+                <p className="text-base leading-relaxed text-foreground/90">
+                  {faq.answer}
+                </p>
+              </div>
+            </details>
           ))}
         </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground mb-4">
-            Still have questions? Check out our other pages:
+        <div className="mt-12 pt-8 border-t border-sidebar-border text-center">
+          <p className="text-foreground/70 mb-4">
+            Still have questions?
           </p>
-          <div className="flex justify-center gap-4 flex-wrap">
-            <a href="/pages/about.html" className="text-primary hover:underline" data-testid="link-about">
+          <div className="flex justify-center gap-6 flex-wrap">
+            <a href="/pages/about.html" className="text-primary hover:underline text-base" data-testid="link-about">
               About Us
             </a>
-            <a href="/pages/contact.html" className="text-primary hover:underline" data-testid="link-contact">
+            <a href="/pages/contact.html" className="text-primary hover:underline text-base" data-testid="link-contact">
               Contact
             </a>
-            <a href="/pages/privacy.html" className="text-primary hover:underline" data-testid="link-privacy">
+            <a href="/pages/privacy.html" className="text-primary hover:underline text-base" data-testid="link-privacy">
               Privacy Policy
             </a>
           </div>
