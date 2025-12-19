@@ -1,25 +1,44 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Download } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Download, Info } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
-type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots';
-type PageSize = 'A4' | 'Letter' | 'Legal';
+type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy';
+type PageSize = 'A4' | 'Letter' | 'Legal' | 'A0' | 'A1' | 'A2' | 'ArchC' | 'ArchD' | 'ArchE';
+type Unit = 'mm' | 'inches';
 
-const PAGE_SIZES: Record<PageSize, { width: number; height: number }> = {
-  'A4': { width: 210, height: 297 },
-  'Letter': { width: 215.9, height: 279.4 },
-  'Legal': { width: 215.9, height: 355.6 },
+const PAGE_SIZES: Record<PageSize, { width: number; height: number; label: string }> = {
+  'A4': { width: 210, height: 297, label: 'A4 (210×297mm)' },
+  'Letter': { width: 215.9, height: 279.4, label: 'Letter (8.5×11in)' },
+  'Legal': { width: 215.9, height: 355.6, label: 'Legal (8.5×14in)' },
+  'A2': { width: 420, height: 594, label: 'A2 (420×594mm)' },
+  'A1': { width: 594, height: 841, label: 'A1 (594×841mm)' },
+  'A0': { width: 841, height: 1189, label: 'A0 (841×1189mm)' },
+  'ArchC': { width: 457.2, height: 609.6, label: 'Arch C (18×24in)' },
+  'ArchD': { width: 609.6, height: 914.4, label: 'Arch D (24×36in)' },
+  'ArchE': { width: 914.4, height: 1219.2, label: 'Arch E (36×48in)' },
+};
+
+const ROUTE_PRESETS: Record<string, { paperType: PaperType; pageSize?: PageSize; title: string; h1: string; gridColor?: string; useCustomColor?: boolean; customColor?: string; backgroundColor?: string }> = {
+  '/hex-paper': { paperType: 'hex-grid', title: 'Free Printable Hex Grid Paper | FreeGridPaper', h1: 'Free Printable Hex Grid Paper' },
+  '/music-staff': { paperType: 'music-staff', title: 'Blank Sheet Music PDF | FreeGridPaper', h1: 'Blank Sheet Music PDF' },
+  '/engineering': { paperType: 'graph-paper', title: 'Engineering Graph Paper | FreeGridPaper', h1: 'Engineering Graph Paper', useCustomColor: true, customColor: '#228B22', backgroundColor: '#FFFFC5' },
+  '/poster-size': { paperType: 'graph-paper', pageSize: 'ArchD', title: 'Poster Size Grid Paper | FreeGridPaper', h1: 'Poster Size Grid Paper' },
+  '/calligraphy': { paperType: 'calligraphy', title: 'Calligraphy Practice Paper | FreeGridPaper', h1: 'Calligraphy Practice Paper' },
+  '/knitting': { paperType: 'knitting', title: 'Knitting & Cross-Stitch Graph Paper | FreeGridPaper', h1: 'Knitting & Cross-Stitch Graph Paper' },
 };
 
 interface Settings {
   paperType: PaperType;
   pageSize: PageSize;
+  unit: Unit;
   dotSpacing: number;
   dotSize: number;
   dotOpacity: number;
@@ -32,11 +51,19 @@ interface Settings {
   showMargin: boolean;
   stavesPerPage: number;
   batchPaperTypes: PaperType[];
+  hexSize: number;
+  stitchWidth: number;
+  stitchHeight: number;
+  calligraphyAngle: number;
+  showRulers: boolean;
+  backgroundColor: string;
+  useCustomBackground: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   paperType: 'dot-grid',
   pageSize: 'A4',
+  unit: 'mm',
   dotSpacing: 5,
   dotSize: 2,
   dotOpacity: 0.5,
@@ -49,15 +76,58 @@ const DEFAULT_SETTINGS: Settings = {
   showMargin: true,
   stavesPerPage: 10,
   batchPaperTypes: [],
+  hexSize: 25.4,
+  stitchWidth: 5,
+  stitchHeight: 7.5,
+  calligraphyAngle: 55,
+  showRulers: false,
+  backgroundColor: '#ffffff',
+  useCustomBackground: false,
+};
+
+const PAPER_TYPE_LABELS: Record<PaperType, string> = {
+  'dot-grid': 'Dot Grid',
+  'isometric-dots': 'Isometric Dots',
+  'graph-paper': 'Graph Paper',
+  'lined-paper': 'Lined Paper',
+  'music-staff': 'Music Staff',
+  'checklist': 'Checklist',
+  'hex-grid': 'Hexagon Grid',
+  'knitting': 'Knitting/Cross-Stitch',
+  'calligraphy': 'Calligraphy',
 };
 
 export default function Home() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [pageTitle, setPageTitle] = useState('FreeGridPaper');
+  const [pageH1, setPageH1] = useState('FreeGridPaper');
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [location] = useLocation();
+
+  useEffect(() => {
+    const preset = ROUTE_PRESETS[location];
+    if (preset) {
+      document.title = preset.title;
+      setPageTitle(preset.title);
+      setPageH1(preset.h1);
+      setSettings(prev => ({
+        ...prev,
+        paperType: preset.paperType,
+        ...(preset.pageSize && { pageSize: preset.pageSize }),
+        ...(preset.useCustomColor !== undefined && { useCustomColor: preset.useCustomColor }),
+        ...(preset.customColor && { customColor: preset.customColor }),
+        ...(preset.backgroundColor && { backgroundColor: preset.backgroundColor, useCustomBackground: true }),
+      }));
+    } else {
+      document.title = 'FreeGridPaper - Free Printable Grid Paper Generator';
+      setPageTitle('FreeGridPaper');
+      setPageH1('FreeGridPaper');
+    }
+  }, [location]);
 
   useEffect(() => {
     const saved = localStorage.getItem('freegridpaper-settings');
-    if (saved) {
+    if (saved && !ROUTE_PRESETS[location]) {
       try {
         setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
       } catch (e) {
@@ -77,6 +147,15 @@ export default function Home() {
 
   const getPageDimensions = () => PAGE_SIZES[settings.pageSize];
 
+  const getCanvasScale = () => {
+    const pageSize = getPageDimensions();
+    const maxDimension = Math.max(pageSize.width, pageSize.height);
+    if (maxDimension > 600) {
+      return Math.max(0.3, 400 / maxDimension);
+    }
+    return 2;
+  };
+
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -86,7 +165,7 @@ export default function Home() {
 
     const pageSize = getPageDimensions();
     const dpr = window.devicePixelRatio || 1;
-    const scale = 2;
+    const scale = getCanvasScale();
 
     canvas.width = pageSize.width * scale * dpr;
     canvas.height = pageSize.height * scale * dpr;
@@ -95,8 +174,13 @@ export default function Home() {
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(scale * dpr, scale * dpr);
-    ctx.fillStyle = '#ffffff';
+    
+    ctx.fillStyle = settings.useCustomBackground ? settings.backgroundColor : '#ffffff';
     ctx.fillRect(0, 0, pageSize.width, pageSize.height);
+
+    if (settings.showRulers) {
+      drawRulers(ctx, pageSize.width, pageSize.height);
+    }
 
     switch (settings.paperType) {
       case 'dot-grid':
@@ -116,6 +200,15 @@ export default function Home() {
         break;
       case 'checklist':
         drawChecklist(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'hex-grid':
+        drawHexGrid(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'knitting':
+        drawKnitting(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'calligraphy':
+        drawCalligraphy(ctx, pageSize.width, pageSize.height);
         break;
     }
   };
@@ -139,6 +232,53 @@ export default function Home() {
       parseInt(result[2], 16),
       parseInt(result[3], 16)
     ] : [0, 0, 0];
+  };
+
+  const drawRulers = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const rulerWidth = 10;
+    const tickSmall = 2;
+    const tickMedium = 4;
+    const tickLarge = 6;
+    
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, width, rulerWidth);
+    ctx.fillRect(0, 0, rulerWidth, height);
+    
+    ctx.strokeStyle = '#666666';
+    ctx.lineWidth = 0.3;
+    ctx.fillStyle = '#333333';
+    ctx.font = '2px sans-serif';
+    
+    const unitSize = settings.unit === 'mm' ? 1 : 25.4;
+    const majorTick = settings.unit === 'mm' ? 10 : 1;
+    const minorTick = settings.unit === 'mm' ? 1 : 0.125;
+    
+    for (let x = 0; x <= width; x += minorTick * unitSize) {
+      const isMajor = Math.abs(x % (majorTick * unitSize)) < 0.01;
+      const isMedium = settings.unit === 'mm' ? Math.abs(x % (5 * unitSize)) < 0.01 : Math.abs(x % (0.5 * unitSize)) < 0.01;
+      const tickHeight = isMajor ? tickLarge : (isMedium ? tickMedium : tickSmall);
+      
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, tickHeight);
+      ctx.stroke();
+      
+      if (isMajor && x > 0) {
+        const label = settings.unit === 'mm' ? `${Math.round(x)}` : `${(x / 25.4).toFixed(0)}`;
+        ctx.fillText(label, x + 0.5, rulerWidth - 1);
+      }
+    }
+    
+    for (let y = 0; y <= height; y += minorTick * unitSize) {
+      const isMajor = Math.abs(y % (majorTick * unitSize)) < 0.01;
+      const isMedium = settings.unit === 'mm' ? Math.abs(y % (5 * unitSize)) < 0.01 : Math.abs(y % (0.5 * unitSize)) < 0.01;
+      const tickHeight = isMajor ? tickLarge : (isMedium ? tickMedium : tickSmall);
+      
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(tickHeight, y);
+      ctx.stroke();
+    }
   };
 
   const drawDotGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -303,10 +443,112 @@ export default function Home() {
     }
   };
 
+  const drawHexGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const hexSizeMM = settings.hexSize;
+    const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
+    
+    ctx.strokeStyle = getColorStyle();
+    ctx.lineWidth = weight;
+
+    const size = hexSizeMM / 2;
+    const hexWidth = size * Math.sqrt(3);
+    const hexHeight = size * 2;
+    const vertDist = hexHeight * 0.75;
+
+    const drawHexagon = (cx: number, cy: number) => {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i - Math.PI / 6;
+        const x = cx + size * Math.cos(angle);
+        const y = cy + size * Math.sin(angle);
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+      ctx.stroke();
+    };
+
+    let row = 0;
+    for (let y = size; y < height + hexHeight; y += vertDist) {
+      const xOffset = row % 2 === 1 ? hexWidth / 2 : 0;
+      for (let x = xOffset + hexWidth / 2; x < width + hexWidth; x += hexWidth) {
+        drawHexagon(x, y);
+      }
+      row++;
+    }
+  };
+
+  const drawKnitting = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const cellWidth = Math.max(2, Math.min(15, settings.stitchWidth));
+    const cellHeight = Math.max(2, Math.min(20, settings.stitchHeight));
+    const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
+    
+    ctx.strokeStyle = getColorStyle();
+    ctx.lineWidth = weight;
+
+    for (let x = 0; x <= width; x += cellWidth) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+
+    for (let y = 0; y <= height; y += cellHeight) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+  };
+
+  const drawCalligraphy = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const lineHeight = Math.max(5, Math.min(15, settings.lineHeight));
+    const angle = settings.calligraphyAngle;
+    const angleRad = (angle * Math.PI) / 180;
+    
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 0.5;
+
+    for (let y = lineHeight; y < height; y += lineHeight) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = getColorStyle();
+    ctx.lineWidth = 0.3;
+    ctx.globalAlpha = 0.4;
+
+    const slantSpacing = 5;
+    const dx = Math.tan(angleRad) * height;
+    
+    for (let x = -dx; x < width + dx; x += slantSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(x, height);
+      ctx.lineTo(x + dx, 0);
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = 1;
+  };
+
   const downloadPDF = (paperType?: PaperType) => {
     const type = paperType || settings.paperType;
     const pageSize = getPageDimensions();
-    const format = settings.pageSize.toLowerCase() as 'a4' | 'letter' | 'legal';
+    
+    let format: string | [number, number];
+    const standardFormats = ['a4', 'letter', 'legal', 'a0', 'a1', 'a2'];
+    const lowerPageSize = settings.pageSize.toLowerCase();
+    
+    if (standardFormats.includes(lowerPageSize)) {
+      format = lowerPageSize as 'a4' | 'letter' | 'legal' | 'a0' | 'a1' | 'a2';
+    } else {
+      format = [pageSize.width, pageSize.height];
+    }
     
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -317,8 +559,16 @@ export default function Home() {
     const width = pageSize.width;
     const height = pageSize.height;
 
-    // Save current settings
-    const savedPaperType = settings.paperType;
+    if (settings.useCustomBackground) {
+      const bgColor = hexToRgb(settings.backgroundColor);
+      doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+      doc.rect(0, 0, width, height, 'F');
+    }
+
+    if (settings.showRulers) {
+      drawRulersPDF(doc, width, height);
+    }
+
     const tempSettings = { ...settings, paperType: type };
 
     switch (type) {
@@ -340,6 +590,15 @@ export default function Home() {
       case 'checklist':
         drawChecklistPDF(doc, width, height, tempSettings);
         break;
+      case 'hex-grid':
+        drawHexGridPDF(doc, width, height, tempSettings);
+        break;
+      case 'knitting':
+        drawKnittingPDF(doc, width, height, tempSettings);
+        break;
+      case 'calligraphy':
+        drawCalligraphyPDF(doc, width, height, tempSettings);
+        break;
     }
 
     const filename = `${type}-${settings.pageSize}-${Date.now()}.pdf`;
@@ -350,7 +609,17 @@ export default function Home() {
     if (settings.batchPaperTypes.length === 0) return;
 
     const pageSize = getPageDimensions();
-    const format = settings.pageSize.toLowerCase() as 'a4' | 'letter' | 'legal';
+    
+    let format: string | [number, number];
+    const standardFormats = ['a4', 'letter', 'legal', 'a0', 'a1', 'a2'];
+    const lowerPageSize = settings.pageSize.toLowerCase();
+    
+    if (standardFormats.includes(lowerPageSize)) {
+      format = lowerPageSize as 'a4' | 'letter' | 'legal' | 'a0' | 'a1' | 'a2';
+    } else {
+      format = [pageSize.width, pageSize.height];
+    }
+    
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -366,6 +635,16 @@ export default function Home() {
         doc.addPage();
       }
       isFirstPage = false;
+
+      if (settings.useCustomBackground) {
+        const bgColor = hexToRgb(settings.backgroundColor);
+        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+        doc.rect(0, 0, width, height, 'F');
+      }
+
+      if (settings.showRulers) {
+        drawRulersPDF(doc, width, height);
+      }
 
       const tempSettings = { ...settings, paperType: type };
 
@@ -388,11 +667,52 @@ export default function Home() {
         case 'checklist':
           drawChecklistPDF(doc, width, height, tempSettings);
           break;
+        case 'hex-grid':
+          drawHexGridPDF(doc, width, height, tempSettings);
+          break;
+        case 'knitting':
+          drawKnittingPDF(doc, width, height, tempSettings);
+          break;
+        case 'calligraphy':
+          drawCalligraphyPDF(doc, width, height, tempSettings);
+          break;
       }
     });
 
     const filename = `batch-${settings.pageSize}-${Date.now()}.pdf`;
     doc.save(filename);
+  };
+
+  const drawRulersPDF = (doc: jsPDF, width: number, height: number) => {
+    const rulerWidth = 10;
+    const tickSmall = 2;
+    const tickMedium = 4;
+    const tickLarge = 6;
+    
+    doc.setFillColor(240, 240, 240);
+    doc.rect(0, 0, width, rulerWidth, 'F');
+    doc.rect(0, 0, rulerWidth, height, 'F');
+    
+    doc.setDrawColor(102, 102, 102);
+    doc.setLineWidth(0.1);
+    
+    const unitSize = settings.unit === 'mm' ? 1 : 25.4;
+    const majorTick = settings.unit === 'mm' ? 10 : 1;
+    const minorTick = settings.unit === 'mm' ? 1 : 0.125;
+    
+    for (let x = 0; x <= width; x += minorTick * unitSize) {
+      const isMajor = Math.abs(x % (majorTick * unitSize)) < 0.01;
+      const isMedium = settings.unit === 'mm' ? Math.abs(x % (5 * unitSize)) < 0.01 : Math.abs(x % (0.5 * unitSize)) < 0.01;
+      const tickHeight = isMajor ? tickLarge : (isMedium ? tickMedium : tickSmall);
+      doc.line(x, 0, x, tickHeight);
+    }
+    
+    for (let y = 0; y <= height; y += minorTick * unitSize) {
+      const isMajor = Math.abs(y % (majorTick * unitSize)) < 0.01;
+      const isMedium = settings.unit === 'mm' ? Math.abs(y % (5 * unitSize)) < 0.01 : Math.abs(y % (0.5 * unitSize)) < 0.01;
+      const tickHeight = isMajor ? tickLarge : (isMedium ? tickMedium : tickSmall);
+      doc.line(0, y, tickHeight, y);
+    }
   };
 
   const drawDotGridPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
@@ -542,6 +862,119 @@ export default function Home() {
     }
   };
 
+  const drawHexGridPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const hexSizeMM = opts.hexSize;
+    const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
+    
+    let color;
+    if (opts.useCustomColor) {
+      color = hexToRgb(opts.customColor);
+    } else {
+      const colorMap: Record<string, number[]> = {
+        cyan: [56, 189, 248],
+        gray: [102, 102, 102],
+        black: [0, 0, 0],
+      };
+      color = colorMap[opts.gridColor];
+    }
+    
+    doc.setDrawColor(color[0], color[1], color[2]);
+    doc.setLineWidth(weight);
+
+    const size = hexSizeMM / 2;
+    const hexWidth = size * Math.sqrt(3);
+    const vertDist = size * 2 * 0.75;
+
+    const drawHexagon = (cx: number, cy: number) => {
+      const points: [number, number][] = [];
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i - Math.PI / 6;
+        points.push([cx + size * Math.cos(angle), cy + size * Math.sin(angle)]);
+      }
+      
+      for (let i = 0; i < 6; i++) {
+        const next = (i + 1) % 6;
+        doc.line(points[i][0], points[i][1], points[next][0], points[next][1]);
+      }
+    };
+
+    let row = 0;
+    for (let y = size; y < height + size * 2; y += vertDist) {
+      const xOffset = row % 2 === 1 ? hexWidth / 2 : 0;
+      for (let x = xOffset + hexWidth / 2; x < width + hexWidth; x += hexWidth) {
+        drawHexagon(x, y);
+      }
+      row++;
+    }
+  };
+
+  const drawKnittingPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const cellWidth = Math.max(2, Math.min(15, opts.stitchWidth));
+    const cellHeight = Math.max(2, Math.min(20, opts.stitchHeight));
+    const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
+    
+    let color;
+    if (opts.useCustomColor) {
+      color = hexToRgb(opts.customColor);
+    } else {
+      const colorMap: Record<string, number[]> = {
+        cyan: [56, 189, 248],
+        gray: [102, 102, 102],
+        black: [0, 0, 0],
+      };
+      color = colorMap[opts.gridColor];
+    }
+    
+    doc.setDrawColor(color[0], color[1], color[2]);
+    doc.setLineWidth(weight);
+
+    for (let x = 0; x <= width; x += cellWidth) {
+      doc.line(x, 0, x, height);
+    }
+
+    for (let y = 0; y <= height; y += cellHeight) {
+      doc.line(0, y, width, y);
+    }
+  };
+
+  const drawCalligraphyPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const lineHeight = Math.max(5, Math.min(15, opts.lineHeight));
+    const angle = opts.calligraphyAngle;
+    const angleRad = (angle * Math.PI) / 180;
+    
+    doc.setDrawColor(204, 204, 204);
+    doc.setLineWidth(0.5);
+
+    for (let y = lineHeight; y < height; y += lineHeight) {
+      doc.line(0, y, width, y);
+    }
+
+    let color;
+    if (opts.useCustomColor) {
+      color = hexToRgb(opts.customColor);
+    } else {
+      const colorMap: Record<string, number[]> = {
+        cyan: [56, 189, 248],
+        gray: [102, 102, 102],
+        black: [0, 0, 0],
+      };
+      color = colorMap[opts.gridColor];
+    }
+    
+    doc.setDrawColor(color[0], color[1], color[2]);
+    doc.setLineWidth(0.2);
+    (doc as any).setGState(new (doc as any).GState({ opacity: 0.4 }));
+
+    const slantSpacing = 5;
+    const dx = Math.tan(angleRad) * height;
+    
+    for (let x = -dx; x < width + dx; x += slantSpacing) {
+      doc.line(x, height, x + dx, 0);
+    }
+
+    (doc as any).setGState(new (doc as any).GState({ opacity: 1 }));
+  };
+
   const toggleBatchPaperType = (type: PaperType) => {
     updateSetting('batchPaperTypes', 
       settings.batchPaperTypes.includes(type)
@@ -550,6 +983,13 @@ export default function Home() {
     );
   };
 
+  const applyInkSaver = () => {
+    updateSetting('useCustomColor', true);
+    updateSetting('customColor', '#e0e0e0');
+  };
+
+  const isLargeFormat = ['A0', 'A1', 'A2', 'ArchC', 'ArchD', 'ArchE'].includes(settings.pageSize);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex flex-col md:flex-row min-h-screen">
@@ -557,7 +997,7 @@ export default function Home() {
           <div className="space-y-6">
             <div>
               <h1 className="text-2xl font-bold text-primary mb-2" data-testid="text-app-title">
-                FreeGridPaper
+                {pageH1}
               </h1>
               <p className="text-sm text-muted-foreground">
                 Generate custom printable paper
@@ -580,9 +1020,12 @@ export default function Home() {
                     <SelectItem value="dot-grid" data-testid="option-dot-grid">Dot Grid</SelectItem>
                     <SelectItem value="isometric-dots" data-testid="option-isometric-dots">Isometric Dots</SelectItem>
                     <SelectItem value="graph-paper" data-testid="option-graph-paper">Graph Paper</SelectItem>
+                    <SelectItem value="hex-grid" data-testid="option-hex-grid">Hexagon Grid (D&D)</SelectItem>
                     <SelectItem value="lined-paper" data-testid="option-lined-paper">Lined Paper</SelectItem>
                     <SelectItem value="music-staff" data-testid="option-music-staff">Music Staff</SelectItem>
                     <SelectItem value="checklist" data-testid="option-checklist">Checklist</SelectItem>
+                    <SelectItem value="knitting" data-testid="option-knitting">Knitting/Cross-Stitch</SelectItem>
+                    <SelectItem value="calligraphy" data-testid="option-calligraphy">Calligraphy</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -602,8 +1045,68 @@ export default function Home() {
                     <SelectItem value="A4" data-testid="option-a4">A4 (210×297mm)</SelectItem>
                     <SelectItem value="Letter" data-testid="option-letter">Letter (8.5×11in)</SelectItem>
                     <SelectItem value="Legal" data-testid="option-legal">Legal (8.5×14in)</SelectItem>
+                    <SelectItem value="A2" data-testid="option-a2">A2 (420×594mm)</SelectItem>
+                    <SelectItem value="A1" data-testid="option-a1">A1 (594×841mm)</SelectItem>
+                    <SelectItem value="A0" data-testid="option-a0">A0 (841×1189mm)</SelectItem>
+                    <SelectItem value="ArchC" data-testid="option-archc">Arch C (18×24in)</SelectItem>
+                    <SelectItem value="ArchD" data-testid="option-archd">Arch D (24×36in)</SelectItem>
+                    <SelectItem value="ArchE" data-testid="option-arche">Arch E (36×48in)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="show-rulers" className="text-sm">
+                    Edge Rulers
+                  </Label>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="w-4 h-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add measurement tick marks along the edges</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Switch
+                  id="show-rulers"
+                  checked={settings.showRulers}
+                  onCheckedChange={(checked) => updateSetting('showRulers', checked)}
+                  data-testid="switch-rulers"
+                />
+              </div>
+
+              {settings.showRulers && (
+                <div className="space-y-2">
+                  <Label htmlFor="unit" className="text-sm font-medium">
+                    Ruler Unit
+                  </Label>
+                  <Select
+                    value={settings.unit}
+                    onValueChange={(value) => updateSetting('unit', value as Unit)}
+                  >
+                    <SelectTrigger id="unit" className="h-10" data-testid="select-unit">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mm" data-testid="option-mm">Millimeters (mm)</SelectItem>
+                      <SelectItem value="inches" data-testid="option-inches">Inches (in)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={applyInkSaver}
+                  className="flex-1"
+                  data-testid="button-ink-saver"
+                >
+                  Ink Saver (Light Grey)
+                </Button>
               </div>
 
               {settings.paperType === 'dot-grid' && (
@@ -884,6 +1387,394 @@ export default function Home() {
                 </div>
               )}
 
+              {settings.paperType === 'hex-grid' && (
+                <div className="space-y-4 pt-2">
+                  <div className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded space-y-2">
+                    <p>Perfect for tabletop gaming, D&D battle maps, and wargaming.</p>
+                    <div className="flex items-center gap-2 text-primary">
+                      <Info className="w-4 h-4" />
+                      <span className="font-medium">1-inch hexes are standard for D&D miniatures.</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm">Hex Size (mm)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('hexSize', Math.max(10, settings.hexSize - 1))}
+                        data-testid="button-hex-size-minus"
+                      >
+                        −
+                      </Button>
+                      <span className="flex-1 text-center text-number" data-testid="text-hex-size">
+                        {settings.hexSize}mm ({(settings.hexSize / 25.4).toFixed(2)}in)
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('hexSize', Math.min(100, settings.hexSize + 1))}
+                        data-testid="button-hex-size-plus"
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant={settings.hexSize === 25.4 ? 'default' : 'outline'}
+                      onClick={() => updateSetting('hexSize', 25.4)}
+                      className="flex-1"
+                      size="sm"
+                      data-testid="button-1inch-hex"
+                    >
+                      1 inch
+                    </Button>
+                    <Button
+                      variant={settings.hexSize === 19.05 ? 'default' : 'outline'}
+                      onClick={() => updateSetting('hexSize', 19.05)}
+                      className="flex-1"
+                      size="sm"
+                      data-testid="button-3quarter-hex"
+                    >
+                      3/4 inch
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Line Weight</Label>
+                      <span className="text-number text-muted-foreground" data-testid="text-hex-line-weight">
+                        {settings.lineWeight}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.lineWeight]}
+                      onValueChange={([value]) => updateSetting('lineWeight', value)}
+                      min={0.1}
+                      max={2}
+                      step={0.1}
+                      data-testid="slider-hex-line-weight"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="hex-color" className="text-sm">
+                      Line Color
+                    </Label>
+                    <Select
+                      value={settings.useCustomColor ? 'custom' : settings.gridColor}
+                      onValueChange={(value) => {
+                        if (value === 'custom') {
+                          updateSetting('useCustomColor', true);
+                        } else {
+                          updateSetting('useCustomColor', false);
+                          updateSetting('gridColor', value as 'cyan' | 'gray' | 'black');
+                        }
+                      }}
+                    >
+                      <SelectTrigger id="hex-color" className="h-10" data-testid="select-hex-color">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gray" data-testid="option-hex-gray">Gray</SelectItem>
+                        <SelectItem value="black" data-testid="option-hex-black">Black</SelectItem>
+                        <SelectItem value="cyan" data-testid="option-hex-cyan">Cyan</SelectItem>
+                        <SelectItem value="custom" data-testid="option-hex-custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-hex-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-hex-color-hex"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.paperType === 'knitting' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Rectangular grid for knitting patterns and cross-stitch designs. Adjust the stitch ratio to match your gauge.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm">Stitch Width (mm)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('stitchWidth', Math.max(2, settings.stitchWidth - 0.5))}
+                        data-testid="button-stitch-width-minus"
+                      >
+                        −
+                      </Button>
+                      <span className="flex-1 text-center text-number" data-testid="text-stitch-width">
+                        {settings.stitchWidth}mm
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('stitchWidth', Math.min(15, settings.stitchWidth + 0.5))}
+                        data-testid="button-stitch-width-plus"
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">Stitch Height (mm)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('stitchHeight', Math.max(2, settings.stitchHeight - 0.5))}
+                        data-testid="button-stitch-height-minus"
+                      >
+                        −
+                      </Button>
+                      <span className="flex-1 text-center text-number" data-testid="text-stitch-height">
+                        {settings.stitchHeight}mm
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('stitchHeight', Math.min(20, settings.stitchHeight + 0.5))}
+                        data-testid="button-stitch-height-plus"
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">Ratio: {(settings.stitchWidth / settings.stitchHeight).toFixed(2)}</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          updateSetting('stitchWidth', 5);
+                          updateSetting('stitchHeight', 7.5);
+                        }}
+                        className="flex-1"
+                        data-testid="button-ratio-2-3"
+                      >
+                        2:3 Ratio
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          updateSetting('stitchWidth', 5);
+                          updateSetting('stitchHeight', 5);
+                        }}
+                        className="flex-1"
+                        data-testid="button-ratio-1-1"
+                      >
+                        1:1 Square
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Line Weight</Label>
+                      <span className="text-number text-muted-foreground" data-testid="text-knit-line-weight">
+                        {settings.lineWeight}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.lineWeight]}
+                      onValueChange={([value]) => updateSetting('lineWeight', value)}
+                      min={0.1}
+                      max={2}
+                      step={0.1}
+                      data-testid="slider-knit-line-weight"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="knit-color" className="text-sm">
+                      Line Color
+                    </Label>
+                    <Select
+                      value={settings.useCustomColor ? 'custom' : settings.gridColor}
+                      onValueChange={(value) => {
+                        if (value === 'custom') {
+                          updateSetting('useCustomColor', true);
+                        } else {
+                          updateSetting('useCustomColor', false);
+                          updateSetting('gridColor', value as 'cyan' | 'gray' | 'black');
+                        }
+                      }}
+                    >
+                      <SelectTrigger id="knit-color" className="h-10" data-testid="select-knit-color">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gray" data-testid="option-knit-gray">Gray</SelectItem>
+                        <SelectItem value="black" data-testid="option-knit-black">Black</SelectItem>
+                        <SelectItem value="cyan" data-testid="option-knit-cyan">Cyan</SelectItem>
+                        <SelectItem value="custom" data-testid="option-knit-custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-knit-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-knit-color-hex"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.paperType === 'calligraphy' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Practice paper with horizontal guide lines and slanted lines for consistent letter angles.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm">Line Height</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={settings.lineHeight === 7.1 ? 'default' : 'outline'}
+                        onClick={() => updateSetting('lineHeight', 7.1)}
+                        className="flex-1"
+                        data-testid="button-calligraphy-college"
+                      >
+                        College (7.1mm)
+                      </Button>
+                      <Button
+                        variant={settings.lineHeight === 8.7 ? 'default' : 'outline'}
+                        onClick={() => updateSetting('lineHeight', 8.7)}
+                        className="flex-1"
+                        data-testid="button-calligraphy-wide"
+                      >
+                        Wide (8.7mm)
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Slant Angle</Label>
+                      <span className="text-number text-muted-foreground" data-testid="text-slant-angle">
+                        {settings.calligraphyAngle}°
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.calligraphyAngle]}
+                      onValueChange={([value]) => updateSetting('calligraphyAngle', value)}
+                      min={45}
+                      max={70}
+                      step={1}
+                      data-testid="slider-slant-angle"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant={settings.calligraphyAngle === 52 ? 'default' : 'outline'}
+                        onClick={() => updateSetting('calligraphyAngle', 52)}
+                        size="sm"
+                        className="flex-1"
+                        data-testid="button-angle-52"
+                      >
+                        52° Italic
+                      </Button>
+                      <Button
+                        variant={settings.calligraphyAngle === 55 ? 'default' : 'outline'}
+                        onClick={() => updateSetting('calligraphyAngle', 55)}
+                        size="sm"
+                        className="flex-1"
+                        data-testid="button-angle-55"
+                      >
+                        55° Standard
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="calligraphy-color" className="text-sm">
+                      Slant Line Color
+                    </Label>
+                    <Select
+                      value={settings.useCustomColor ? 'custom' : settings.gridColor}
+                      onValueChange={(value) => {
+                        if (value === 'custom') {
+                          updateSetting('useCustomColor', true);
+                        } else {
+                          updateSetting('useCustomColor', false);
+                          updateSetting('gridColor', value as 'cyan' | 'gray' | 'black');
+                        }
+                      }}
+                    >
+                      <SelectTrigger id="calligraphy-color" className="h-10" data-testid="select-calligraphy-color">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gray" data-testid="option-calligraphy-gray">Gray</SelectItem>
+                        <SelectItem value="cyan" data-testid="option-calligraphy-cyan">Cyan</SelectItem>
+                        <SelectItem value="black" data-testid="option-calligraphy-black">Black</SelectItem>
+                        <SelectItem value="custom" data-testid="option-calligraphy-custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-calligraphy-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-calligraphy-color-hex"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {settings.paperType === 'lined-paper' && (
                 <div className="space-y-4 pt-2">
                   <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
@@ -1014,7 +1905,7 @@ export default function Home() {
                     Batch Export
                   </summary>
                   <div className="space-y-2 pt-2">
-                    {(['dot-grid', 'isometric-dots', 'graph-paper', 'lined-paper', 'music-staff', 'checklist'] as PaperType[]).map((type) => (
+                    {(Object.keys(PAPER_TYPE_LABELS) as PaperType[]).map((type) => (
                       <label key={type} className="flex items-center gap-3 cursor-pointer py-2 px-2 rounded hover-elevate">
                         <input
                           type="checkbox"
@@ -1024,9 +1915,7 @@ export default function Home() {
                           className="w-5 h-5 rounded border-primary cursor-pointer"
                           data-testid={`checkbox-batch-${type}`}
                         />
-                        <span className="text-sm">
-                          {type === 'dot-grid' ? 'Dot Grid' : type === 'isometric-dots' ? 'Isometric Dots' : type === 'graph-paper' ? 'Graph Paper' : type === 'lined-paper' ? 'Lined Paper' : type === 'music-staff' ? 'Music Staff' : 'Checklist'}
-                        </span>
+                        <span className="text-sm">{PAPER_TYPE_LABELS[type]}</span>
                       </label>
                     ))}
                     <Button
@@ -1046,11 +1935,12 @@ export default function Home() {
           </div>
         </aside>
 
-        <main className="flex-1 p-2 md:p-8 flex items-center justify-center bg-background overflow-x-auto">
-          <div className="w-full min-w-fit max-w-4xl px-2 md:px-0">
+        <main className={`flex-1 p-2 md:p-8 flex items-center justify-center bg-background ${isLargeFormat ? 'overflow-auto' : 'overflow-x-auto'}`}>
+          <div className={`${isLargeFormat ? 'w-full h-full flex items-center justify-center' : 'w-full min-w-fit max-w-4xl'} px-2 md:px-0`}>
             <canvas
               ref={canvasRef}
-              className="w-full h-auto rounded shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              className="rounded shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              style={isLargeFormat ? { maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' } : {}}
               data-testid="canvas-preview"
             />
           </div>
@@ -1071,6 +1961,11 @@ export default function Home() {
         <h2 className="text-2xl font-bold text-foreground">Isometric Dots for Technical Drawing</h2>
         <p className="text-base leading-relaxed text-foreground/90">
           Isometric dot grids are perfect for 3D sketching, technical drawing, and engineering diagrams. The hexagonal arrangement enables accurate perspective drawing.
+        </p>
+
+        <h2 className="text-2xl font-bold text-foreground">Hexagon Grids for Tabletop Gaming</h2>
+        <p className="text-base leading-relaxed text-foreground/90">
+          Hex grids are the gold standard for D&D battle maps and wargaming. Our 1-inch hex option is specifically designed for standard miniature bases.
         </p>
         
         <h2 className="text-2xl font-bold text-foreground">How to Print</h2>

@@ -1,0 +1,37 @@
+Act as a Lead Frontend Engineer. We are upgrading "FreeGridPaper.com" to become a comprehensive "Productivity Platform".
+
+The site currently uses an HTML5 Canvas for preview and jsPDF for generation. We need to strictly maintain the client-side architecture (no server generation).
+
+### 1. NEW PATTERN ENGINES (Extend existing draw logic)
+Refactor the drawing function to support these new modes:
+- **Hexagon Grid (D&D Mode):** Draw varying rows of hexagons. *Crucial:* Add a "Hex Size" input (inches) so D&D players get exactly 1-inch hexes.
+- **Knitting/Cross-Stitch:** A rectangular grid where width != height. Add specific inputs for "Stitch Ratio" (e.g., 2:3).
+- **Music Staves:** Draw groups of 5 horizontal lines (Staff) with proper spacing.
+- **Calligraphy:** Standard horizontal lines with 55-degree slanted "guide lines" overlaid.
+
+### 2. THE "POSTER SHOP" (Canvas & PDF Updates)
+- Update the "Paper Size" dropdown.
+- **Add Large Formats:** Arch C (18x24"), Arch D (24x36"), Arch E (36x48"), A0, A1, A2.
+- **Scaling Logic:** Ensure the canvas preview zooms out effectively so the user can see the whole poster, OR add scrollbars for the large preview.
+
+### 3. THE RULER BORDER
+- Add a toggle: "Show Edge Rulers".
+- **Logic:** If true, draw tick marks along the top and left edge of the canvas (and PDF).
+- **Units:** Sync ticks to the selected unit (Inches or MM).
+
+### 4. GHOST ROUTING (The "Spoke" Pages)
+Implement a client-side router that reads the URL path on load to pre-configure the tool.
+- **Map Routes to States:**
+  - `/hex-paper` -> Selects Hexagon Pattern, Sets Title to "Free Printable Hex Grid Paper".
+  - `/music-staff` -> Selects Music Pattern, Sets Title to "Blank Sheet Music PDF".
+  - `/engineering` -> Selects Grid, Green Lines, Yellow Background (Classic Engineering Pad).
+  - `/poster-size` -> Selects Grid, Arch D Size.
+- **HTML Injection:** Dynamically update the `<h1>` tag and `<title>` tag based on the active route to satisfy Google SEO.
+- **Fallback:** If route is `/` or unknown, load standard default.
+
+### 5. UI/UX REFINEMENT
+- **"Battle Map" Toggle:** If Hex pattern is selected, show a helper tooltip: "1-inch hexes are standard for D&D miniatures."
+- **Ink Saver:** Add a "Quick Preset" button for "Light Grey" (#e0e0e0) to encourage ink saving.
+
+### GOAL
+The user should be able to type `freegridpaper.com/hex-paper`, see a hex grid immediately, and click "Download PDF" to get a generated file without page reloads.
