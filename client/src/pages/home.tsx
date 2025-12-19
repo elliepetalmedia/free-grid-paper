@@ -1957,7 +1957,7 @@ export default function Home() {
         <main className="flex-1 p-2 md:p-8 flex flex-col items-center justify-center bg-background overflow-hidden">
           <div className="flex flex-col items-center gap-3 w-full max-w-4xl px-2 md:px-0">
             <div className="text-center">
-              <span className="text-sm font-medium text-muted-foreground" data-testid="text-paper-size-label">
+              <span className="text-xl font-semibold text-foreground" data-testid="text-paper-size-label">
                 {PAGE_SIZES[settings.pageSize].label}
               </span>
               {isLargeFormat && (
