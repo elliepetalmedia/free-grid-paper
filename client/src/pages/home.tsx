@@ -97,12 +97,19 @@ const PAPER_TYPE_LABELS: Record<PaperType, string> = {
   'calligraphy': 'Calligraphy',
 };
 
+const PAPER_TYPE_TO_ROUTE: Partial<Record<PaperType, string>> = {
+  'hex-grid': '/hex-paper',
+  'music-staff': '/music-staff',
+  'calligraphy': '/calligraphy',
+  'knitting': '/knitting',
+};
+
 export default function Home() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [pageTitle, setPageTitle] = useState('FreeGridPaper');
   const [pageH1, setPageH1] = useState('FreeGridPaper');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     const preset = ROUTE_PRESETS[location];
@@ -143,6 +150,18 @@ export default function Home() {
 
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handlePaperTypeChange = (paperType: PaperType) => {
+    const route = PAPER_TYPE_TO_ROUTE[paperType];
+    if (route) {
+      setLocation(route);
+    } else {
+      if (location !== '/') {
+        setLocation('/');
+      }
+      updateSetting('paperType', paperType);
+    }
   };
 
   const getPageDimensions = () => PAGE_SIZES[settings.pageSize];
@@ -1030,7 +1049,7 @@ export default function Home() {
                 </Label>
                 <Select
                   value={settings.paperType}
-                  onValueChange={(value) => updateSetting('paperType', value as PaperType)}
+                  onValueChange={(value) => handlePaperTypeChange(value as PaperType)}
                 >
                   <SelectTrigger id="paper-type" className="h-10" data-testid="select-paper-type">
                     <SelectValue />
