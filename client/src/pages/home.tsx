@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Download, Info } from 'lucide-react';
+import { Download, Info, HelpCircle } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
 type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy';
@@ -1034,9 +1034,16 @@ export default function Home() {
         <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-4 md:p-6 md:h-screen md:overflow-y-auto">
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-primary mb-2" data-testid="text-app-title">
-                {pageH1}
-              </h1>
+              <div className="flex items-center justify-between mb-2">
+                <h1 className="text-2xl font-bold text-primary" data-testid="text-app-title">
+                  {pageH1}
+                </h1>
+                <Link href="/faq">
+                  <Button variant="ghost" size="icon" data-testid="button-faq">
+                    <HelpCircle className="h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Generate custom printable paper
               </p>
@@ -2032,6 +2039,14 @@ export default function Home() {
       <footer className="bg-sidebar border-t border-sidebar-border py-8">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
           <nav className="flex flex-col sm:flex-row flex-wrap justify-center gap-2 sm:gap-4 mb-4">
+            <Link
+              href="/faq"
+              className="text-primary hover:underline text-center"
+              data-testid="link-faq"
+            >
+              FAQ
+            </Link>
+            <span className="text-muted-foreground hidden sm:inline">|</span>
             <a
               href="/pages/about.html"
               className="text-primary hover:underline text-center"
