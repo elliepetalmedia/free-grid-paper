@@ -181,19 +181,17 @@ export default function Home() {
   }, [settings]);
 
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
+    if (ROUTE_PRESETS[location]) {
+      setLocation('/');
+    }
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const handlePaperTypeChange = (paperType: PaperType) => {
-    const route = PAPER_TYPE_TO_ROUTE[paperType];
-    if (route) {
-      setLocation(route);
-    } else {
-      if (location !== '/') {
-        setLocation('/');
-      }
-      updateSetting('paperType', paperType);
+    if (location !== '/') {
+      setLocation('/');
     }
+    setSettings(prev => ({ ...prev, paperType }));
   };
 
   const getPageDimensions = () => PAGE_SIZES[settings.pageSize];
@@ -1065,7 +1063,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <nav className="bg-sidebar border-b border-sidebar-border px-2 md:px-4 py-2 flex-shrink-0">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 md:gap-4">
+          <span className="text-xs text-muted-foreground whitespace-nowrap hidden md:inline">Quick Downloads:</span>
           <div className="flex items-center gap-1 md:gap-2 overflow-x-auto scrollbar-hide">
             {TOP_NAV_PRESETS.map((preset) => (
               <Link key={preset.route} href={preset.route}>
@@ -1080,9 +1079,6 @@ export default function Home() {
               </Link>
             ))}
           </div>
-          <Link href="/faq" className="text-sm text-primary hover:underline flex-shrink-0" data-testid="link-faq-nav">
-            FAQ
-          </Link>
         </div>
       </nav>
 
