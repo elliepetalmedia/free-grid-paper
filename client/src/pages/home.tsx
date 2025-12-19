@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Download, Info, HelpCircle } from 'lucide-react';
+import { Download, Info, X } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
 type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy';
@@ -26,14 +26,37 @@ const PAGE_SIZES: Record<PageSize, { width: number; height: number; label: strin
   'ArchE': { width: 914.4, height: 1219.2, label: 'Arch E (36×48in)' },
 };
 
-const ROUTE_PRESETS: Record<string, { paperType: PaperType; pageSize?: PageSize; title: string; h1: string; gridColor?: string; useCustomColor?: boolean; customColor?: string; backgroundColor?: string }> = {
-  '/hex-paper': { paperType: 'hex-grid', title: 'Free Printable Hex Grid Paper | FreeGridPaper', h1: 'Free Printable Hex Grid Paper' },
-  '/music-staff': { paperType: 'music-staff', title: 'Blank Sheet Music PDF | FreeGridPaper', h1: 'Blank Sheet Music PDF' },
-  '/engineering': { paperType: 'graph-paper', title: 'Engineering Graph Paper | FreeGridPaper', h1: 'Engineering Graph Paper', useCustomColor: true, customColor: '#228B22', backgroundColor: '#FFFFC5' },
-  '/poster-size': { paperType: 'graph-paper', pageSize: 'ArchD', title: 'Poster Size Grid Paper | FreeGridPaper', h1: 'Poster Size Grid Paper' },
-  '/calligraphy': { paperType: 'calligraphy', title: 'Calligraphy Practice Paper | FreeGridPaper', h1: 'Calligraphy Practice Paper' },
-  '/knitting': { paperType: 'knitting', title: 'Knitting & Cross-Stitch Graph Paper | FreeGridPaper', h1: 'Knitting & Cross-Stitch Graph Paper' },
+interface RoutePreset {
+  paperType: PaperType;
+  pageSize?: PageSize;
+  hexSize?: number;
+  title: string;
+  h1: string;
+  quickDownloadText?: string;
+  useCustomColor?: boolean;
+  customColor?: string;
+  backgroundColor?: string;
+}
+
+const ROUTE_PRESETS: Record<string, RoutePreset> = {
+  '/hex-paper': { paperType: 'hex-grid', pageSize: 'Letter', hexSize: 25.4, title: 'Free Printable Hex Grid Paper | FreeGridPaper', h1: 'Hex Grid Paper', quickDownloadText: 'Hex Grid (Letter, 1")' },
+  '/music-staff': { paperType: 'music-staff', pageSize: 'A4', title: 'Blank Sheet Music PDF | FreeGridPaper', h1: 'Blank Sheet Music', quickDownloadText: 'Blank Sheet Music (A4)' },
+  '/engineering': { paperType: 'graph-paper', title: 'Engineering Graph Paper | FreeGridPaper', h1: 'Engineering Graph Paper', quickDownloadText: 'Engineering Paper', useCustomColor: true, customColor: '#228B22', backgroundColor: '#FFFFC5' },
+  '/poster-size': { paperType: 'graph-paper', pageSize: 'ArchD', title: 'Poster Size Grid Paper | FreeGridPaper', h1: 'Poster Size Graph', quickDownloadText: 'Poster Graph (24×36")' },
+  '/calligraphy': { paperType: 'calligraphy', title: 'Calligraphy Practice Paper | FreeGridPaper', h1: 'Calligraphy Practice Paper', quickDownloadText: 'Calligraphy Paper' },
+  '/knitting': { paperType: 'knitting', title: 'Knitting & Cross-Stitch Graph Paper | FreeGridPaper', h1: 'Knitting Graph Paper', quickDownloadText: 'Knitting Graph' },
+  '/graph': { paperType: 'graph-paper', pageSize: 'Letter', title: 'Standard Graph Paper | FreeGridPaper', h1: 'Standard Graph Paper', quickDownloadText: 'Graph Paper (Letter)' },
+  '/dot-grid': { paperType: 'dot-grid', pageSize: 'A4', title: 'Dot Grid Paper | FreeGridPaper', h1: 'Dot Grid Paper', quickDownloadText: 'Dot Grid (A4)' },
 };
+
+const TOP_NAV_PRESETS = [
+  { label: 'Graph Paper', route: '/graph' },
+  { label: 'Dot Grid', route: '/dot-grid' },
+  { label: 'Hexagon (D&D)', route: '/hex-paper' },
+  { label: 'Music Staff', route: '/music-staff' },
+  { label: 'Engineering', route: '/engineering' },
+  { label: 'Poster Size', route: '/poster-size' },
+];
 
 interface Settings {
   paperType: PaperType;
@@ -102,12 +125,15 @@ const PAPER_TYPE_TO_ROUTE: Partial<Record<PaperType, string>> = {
   'music-staff': '/music-staff',
   'calligraphy': '/calligraphy',
   'knitting': '/knitting',
+  'graph-paper': '/graph',
+  'dot-grid': '/dot-grid',
 };
 
 export default function Home() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [pageTitle, setPageTitle] = useState('FreeGridPaper');
   const [pageH1, setPageH1] = useState('FreeGridPaper');
+  const [quickDownloadText, setQuickDownloadText] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [location, setLocation] = useLocation();
 
@@ -117,18 +143,22 @@ export default function Home() {
       document.title = preset.title;
       setPageTitle(preset.title);
       setPageH1(preset.h1);
-      setSettings(prev => ({
-        ...prev,
+      setQuickDownloadText(preset.quickDownloadText || null);
+      setSettings({
+        ...DEFAULT_SETTINGS,
         paperType: preset.paperType,
-        ...(preset.pageSize && { pageSize: preset.pageSize }),
-        ...(preset.useCustomColor !== undefined && { useCustomColor: preset.useCustomColor }),
-        ...(preset.customColor && { customColor: preset.customColor }),
-        ...(preset.backgroundColor && { backgroundColor: preset.backgroundColor, useCustomBackground: true }),
-      }));
+        pageSize: preset.pageSize || DEFAULT_SETTINGS.pageSize,
+        hexSize: preset.hexSize || DEFAULT_SETTINGS.hexSize,
+        useCustomColor: preset.useCustomColor || false,
+        customColor: preset.customColor || DEFAULT_SETTINGS.customColor,
+        backgroundColor: preset.backgroundColor || DEFAULT_SETTINGS.backgroundColor,
+        useCustomBackground: preset.backgroundColor ? true : false,
+      });
     } else {
       document.title = 'FreeGridPaper - Free Printable Grid Paper Generator';
       setPageTitle('FreeGridPaper');
       setPageH1('FreeGridPaper');
+      setQuickDownloadText(null);
     }
   }, [location]);
 
@@ -1028,20 +1058,39 @@ export default function Home() {
 
   const isLargeFormat = ['A0', 'A1', 'A2', 'ArchC', 'ArchD', 'ArchE'].includes(settings.pageSize);
 
+  const dismissQuickDownload = () => setQuickDownloadText(null);
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="flex flex-col md:flex-row min-h-screen">
-        <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-4 md:p-6 md:h-screen md:overflow-y-auto">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <nav className="bg-sidebar border-b border-sidebar-border px-2 md:px-4 py-2 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto scrollbar-hide">
+            {TOP_NAV_PRESETS.map((preset) => (
+              <Link key={preset.route} href={preset.route}>
+                <Button
+                  variant={location === preset.route ? 'default' : 'ghost'}
+                  size="sm"
+                  className="whitespace-nowrap text-xs md:text-sm"
+                  data-testid={`nav-${preset.route.slice(1)}`}
+                >
+                  {preset.label}
+                </Button>
+              </Link>
+            ))}
+          </div>
+          <Link href="/faq" className="text-sm text-primary hover:underline flex-shrink-0" data-testid="link-faq-nav">
+            FAQ
+          </Link>
+        </div>
+      </nav>
+
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-4 md:p-6 md:h-[calc(100vh-48px)] md:overflow-y-auto flex-shrink-0">
           <div className="space-y-6">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <h1 className="text-2xl font-bold text-primary" data-testid="text-app-title">
-                  {pageH1}
-                </h1>
-                <Link href="/faq" className="text-sm text-primary hover:underline" data-testid="link-faq-sidebar">
-                  FAQ
-                </Link>
-              </div>
+              <h1 className="text-2xl font-bold text-primary mb-1" data-testid="text-app-title">
+                {pageH1}
+              </h1>
               <p className="text-sm text-muted-foreground">
                 Generate custom printable paper
               </p>
@@ -1979,6 +2028,24 @@ export default function Home() {
         </aside>
 
         <main className="flex-1 p-2 md:p-8 flex flex-col items-center justify-center bg-background overflow-hidden">
+          {quickDownloadText && (
+            <div className="w-full max-w-2xl mb-4 bg-primary/10 border border-primary/30 rounded-lg p-4 flex items-center justify-between gap-4" data-testid="quick-download-banner">
+              <div className="flex items-center gap-3">
+                <span className="text-base font-medium text-foreground">
+                  Ready to download: {quickDownloadText}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => downloadPDF()} size="sm" data-testid="button-quick-download">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Now
+                </Button>
+                <Button variant="ghost" size="icon" onClick={dismissQuickDownload} data-testid="button-dismiss-banner">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col items-center gap-3 w-full max-w-4xl px-2 md:px-0">
             <div className="text-center">
               <span className="text-xl font-semibold text-foreground" data-testid="text-paper-size-label">

@@ -17,6 +17,8 @@ function Router() {
       <Route path="/poster-size" component={Home} />
       <Route path="/calligraphy" component={Home} />
       <Route path="/knitting" component={Home} />
+      <Route path="/graph" component={Home} />
+      <Route path="/dot-grid" component={Home} />
       <Route path="/faq" component={FAQ} />
       <Route component={NotFound} />
     </Switch>
