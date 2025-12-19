@@ -1088,9 +1088,14 @@ export default function Home() {
         <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-4 md:p-6 md:h-[calc(100vh-48px)] md:overflow-y-auto flex-shrink-0">
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-primary mb-1" data-testid="text-app-title">
-                {pageH1}
-              </h1>
+              <div className="flex items-center justify-between mb-1">
+                <h1 className="text-2xl font-bold text-primary" data-testid="text-app-title">
+                  {pageH1}
+                </h1>
+                <Link href="/faq" className="text-base text-primary hover:underline" data-testid="link-faq-sidebar">
+                  FAQ
+                </Link>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Generate custom printable paper
               </p>
