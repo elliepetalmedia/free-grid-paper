@@ -15,6 +15,7 @@ function Router() {
       <Route path="/music-staff" component={Home} />
       <Route path="/engineering" component={Home} />
       <Route path="/poster-size" component={Home} />
+      <Route path="/poster-hex" component={Home} />
       <Route path="/calligraphy" component={Home} />
       <Route path="/knitting" component={Home} />
       <Route path="/graph" component={Home} />

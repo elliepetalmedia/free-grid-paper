@@ -43,6 +43,7 @@ const ROUTE_PRESETS: Record<string, RoutePreset> = {
   '/music-staff': { paperType: 'music-staff', pageSize: 'A4', title: 'Blank Sheet Music PDF | FreeGridPaper', h1: 'Blank Sheet Music', quickDownloadText: 'Blank Sheet Music (A4)' },
   '/engineering': { paperType: 'graph-paper', title: 'Engineering Graph Paper | FreeGridPaper', h1: 'Engineering Graph Paper', quickDownloadText: 'Engineering Paper', useCustomColor: true, customColor: '#228B22', backgroundColor: '#FFFFC5' },
   '/poster-size': { paperType: 'graph-paper', pageSize: 'ArchD', title: 'Poster Size Grid Paper | FreeGridPaper', h1: 'Poster Size Graph', quickDownloadText: 'Poster Graph (24×36")' },
+  '/poster-hex': { paperType: 'hex-grid', pageSize: 'ArchD', hexSize: 25.4, title: 'Poster Size Hex Grid for D&D | FreeGridPaper', h1: 'Poster Size Hex (D&D)', quickDownloadText: 'Poster Hex Grid (24×36", 1")' },
   '/calligraphy': { paperType: 'calligraphy', title: 'Calligraphy Practice Paper | FreeGridPaper', h1: 'Calligraphy Practice Paper', quickDownloadText: 'Calligraphy Paper' },
   '/knitting': { paperType: 'knitting', title: 'Knitting & Cross-Stitch Graph Paper | FreeGridPaper', h1: 'Knitting Graph Paper', quickDownloadText: 'Knitting Graph' },
   '/graph': { paperType: 'graph-paper', pageSize: 'Letter', title: 'Standard Graph Paper | FreeGridPaper', h1: 'Standard Graph Paper', quickDownloadText: 'Graph Paper (Letter)' },
@@ -56,6 +57,7 @@ const TOP_NAV_PRESETS = [
   { label: 'Music Staff', route: '/music-staff' },
   { label: 'Engineering', route: '/engineering' },
   { label: 'Poster Size', route: '/poster-size' },
+  { label: 'Poster Hex (D&D)', route: '/poster-hex' },
 ];
 
 interface Settings {
