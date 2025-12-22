@@ -197,7 +197,16 @@ export default function Home() {
   const getPageDimensions = () => PAGE_SIZES[settings.pageSize];
 
   const getCanvasScale = () => {
-    return 1.5;
+    const pageSize = getPageDimensions();
+    const isMobile = window.innerWidth < 800;
+    const dpr = window.devicePixelRatio || 1;
+    
+    const maxCanvasPixels = isMobile ? 1080 : 2048;
+    const maxDimension = Math.max(pageSize.width, pageSize.height);
+    const naturalScale = 1.5;
+    const maxScale = maxCanvasPixels / (maxDimension * dpr);
+    
+    return Math.min(naturalScale, maxScale);
   };
 
   const getPreviewDimensions = () => {
@@ -225,7 +234,8 @@ export default function Home() {
     if (!ctx) return;
 
     const pageSize = getPageDimensions();
-    const dpr = window.devicePixelRatio || 1;
+    const isMobile = window.innerWidth < 800;
+    const dpr = isMobile ? 1 : (window.devicePixelRatio || 1);
     const scale = getCanvasScale();
 
     canvas.width = pageSize.width * scale * dpr;
