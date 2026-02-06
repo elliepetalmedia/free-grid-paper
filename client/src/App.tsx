@@ -20,6 +20,17 @@ function Router() {
       <Route path="/knitting" component={Home} />
       <Route path="/graph" component={Home} />
       <Route path="/dot-grid" component={Home} />
+      <Route path="/handwriting" component={Home} />
+      <Route path="/guitar-tab" component={Home} />
+      <Route path="/bass-tab" component={Home} />
+      <Route path="/genkoyoushi" component={Home} />
+      <Route path="/perspective-1" component={Home} />
+      <Route path="/perspective-2" component={Home} />
+      <Route path="/comic-2x3" component={Home} />
+      <Route path="/storyboard" component={Home} />
+      <Route path="/isometric-dots" component={Home} />
+      <Route path="/lined-paper" component={Home} />
+      <Route path="/checklist" component={Home} />
       <Route path="/faq" component={FAQ} />
       <Route component={NotFound} />
     </Switch>
