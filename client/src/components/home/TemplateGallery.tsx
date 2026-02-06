@@ -47,32 +47,31 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, clas
     const categories: GalleryItem['category'][] = ['General', 'Art & Design', 'Music', 'Specialty'];
 
     return (
-        <div className={cn("flex flex-col gap-8 pb-4", className)}>
+        <div className={cn("flex flex-col gap-6 pb-4", className)}>
             {categories.map((category) => (
-                <div key={category} className="space-y-4">
-                    <h3 className="text-base font-bold text-foreground uppercase tracking-wider pl-1 border-b border-border pb-2">
+                <div key={category} className="space-y-3">
+                    <h3 className="text-sm font-bold text-primary uppercase tracking-widest">
                         {category}
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {GALLERY_ITEMS.filter(item => item.category === category).map((item) => (
-                            <Button
+                            <button
                                 key={item.route}
-                                variant="outline"
-                                className="h-auto flex flex-col items-center p-5 gap-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 hover:bg-primary/10 hover:border-primary transition-all group text-wrap shadow-sm hover:shadow-md"
+                                className="group relative flex flex-col rounded-lg overflow-hidden border-2 border-slate-600 hover:border-primary transition-all shadow-md hover:shadow-xl hover:scale-[1.02] bg-slate-800"
                                 onClick={() => onSelect(item.route)}
                             >
-                                <div className="w-20 h-20 text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
-                                    <TemplateIcon type={item.type} />
+                                {/* Large icon area - takes up most of the card */}
+                                <div className="flex items-center justify-center p-4 h-28 bg-slate-700 group-hover:bg-slate-600 transition-colors">
+                                    <div className="w-full h-full max-w-[100px] text-cyan-400 group-hover:text-cyan-300 transition-colors">
+                                        <TemplateIcon type={item.type} />
+                                    </div>
                                 </div>
-                                <div className="space-y-1.5 text-center">
-                                    <span className="font-semibold text-base text-foreground block">{item.label}</span>
-                                    {item.description && (
-                                        <span className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 font-normal">
-                                            {item.description}
-                                        </span>
-                                    )}
+                                {/* Compact text label */}
+                                <div className="px-3 py-2 bg-slate-800 text-center">
+                                    <span className="font-semibold text-sm text-white block truncate">{item.label}</span>
+                                    <span className="text-xs text-slate-400 line-clamp-1">{item.description}</span>
                                 </div>
-                            </Button>
+                            </button>
                         ))}
                     </div>
                 </div>

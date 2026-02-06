@@ -244,6 +244,11 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [location, setLocation] = useLocation();
 
+  // Show landing page if on root and no session activity recorded
+  const isRootPath = location === '/' || location === '';
+  const hasSessionActivity = typeof window !== 'undefined' && sessionStorage.getItem('fgp-session-active') === 'true';
+  const showLanding = isRootPath && !hasSessionActivity;
+
   useEffect(() => {
     const preset = ROUTE_PRESETS[location];
     let baseSettings = DEFAULT_SETTINGS;
@@ -1851,9 +1856,61 @@ export default function Home() {
   const dismissQuickDownload = () => setQuickDownloadText(null);
 
   const handleGallerySelect = (route: string) => {
+    sessionStorage.setItem('fgp-session-active', 'true');
     setLocation(route);
     setGalleryOpen(false);
   };
+
+  // Landing page view for first-time visitors
+  if (showLanding) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-start px-4 py-8 md:py-12">
+          {/* Header */}
+          <div className="text-center mb-8 max-w-2xl">
+            <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
+              FreeGridPaper
+            </h1>
+            <p className="text-lg md:text-xl text-foreground leading-relaxed">
+              Create and download <strong>free printable stationery</strong>: graph paper, dot grids,
+              music sheets, comic templates, and more. Customize spacing, colors, and sizes,
+              then export high-quality <strong>vector PDFs</strong> — perfect for any printer.
+            </p>
+            <p className="text-base text-muted-foreground mt-4">
+              <span className="inline-flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                <strong>100% Private</strong> — runs entirely in your browser. No uploads, no tracking.
+              </span>
+            </p>
+          </div>
+
+          {/* Gallery */}
+          <div className="w-full max-w-5xl">
+            <h2 className="text-center text-lg font-semibold text-muted-foreground mb-6">
+              Choose a Template to Get Started
+            </h2>
+            <TemplateGallery onSelect={handleGallerySelect} />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="bg-sidebar border-t border-sidebar-border py-6">
+          <div className="max-w-3xl mx-auto px-4 text-center">
+            <nav className="flex flex-wrap justify-center gap-4 mb-3 text-sm">
+              <Link href="/faq" className="text-primary hover:underline">FAQ</Link>
+              <span className="text-muted-foreground">|</span>
+              <a href="/pages/about.html" className="text-primary hover:underline">About</a>
+              <span className="text-muted-foreground">|</span>
+              <a href="/pages/contact.html" className="text-primary hover:underline">Contact</a>
+              <span className="text-muted-foreground">|</span>
+              <a href="/pages/privacy.html" className="text-primary hover:underline">Privacy</a>
+            </nav>
+            <p className="text-sm text-muted-foreground">Copyright 2025 Ellie Petal Media</p>
+          </div>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
