@@ -7,12 +7,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Download, Info, X } from 'lucide-react';
+import { Download, Info, X, Share2, Check } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import { SEOContent, SEO_DATA } from '@/components/layout/SEOContent';
+import { AdBanner } from '@/components/layout/AdBanner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { TemplateGallery } from '@/components/home/TemplateGallery';
+import { Grid } from 'lucide-react';
 
-type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy';
+type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy' | 'handwriting' | 'guitar-tab' | 'bass-tab' | 'genkoyoushi' | 'perspective-grid' | 'comic-layout' | 'storyboard';
 type PageSize = 'A4' | 'Letter' | 'Legal' | 'A0' | 'A1' | 'A2' | 'ArchC' | 'ArchD' | 'ArchE';
 type Unit = 'mm' | 'inches';
+
+// Helper to safely parse URL params
+const parseUrlParams = (defaults: Settings) => {
+  const params = new URLSearchParams(window.location.search);
+  const updates: Partial<Settings> = {};
+  let hasUpdates = false;
+
+
+  try {
+    for (const [key, value] of Array.from(params.entries())) {
+      if (key in defaults) {
+        // Handle types explicitly if needed, but JSON.parse is good for numbers/bools
+        try {
+          updates[key as keyof Settings] = JSON.parse(decodeURIComponent(value));
+        } catch {
+          // Fallback for strings that aren't JSON encoded
+          updates[key as keyof Settings] = decodeURIComponent(value) as any;
+        }
+        hasUpdates = true;
+      }
+    }
+  } catch (e) {
+    console.error("Failed to parse URL params", e);
+  }
+
+  return hasUpdates ? updates : null;
+};
+
+
+const hexToRgb = (hex: string) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [0, 0, 0];
+};
 
 const PAGE_SIZES: Record<PageSize, { width: number; height: number; label: string }> = {
   'A4': { width: 210, height: 297, label: 'A4 (210×297mm)' },
@@ -29,6 +71,12 @@ const PAGE_SIZES: Record<PageSize, { width: number; height: number; label: strin
 interface RoutePreset {
   paperType: PaperType;
   pageSize?: PageSize;
+  lineHeight?: number;
+  genkoyoushiSize?: number;
+  perspectiveType?: '1-point' | '2-point';
+  comicLayout?: '2x3' | '3x3' | 'splash';
+  storyboardCols?: number;
+  storyboardRows?: number;
   hexSize?: number;
   title: string;
   h1: string;
@@ -48,6 +96,17 @@ const ROUTE_PRESETS: Record<string, RoutePreset> = {
   '/knitting': { paperType: 'knitting', title: 'Knitting & Cross-Stitch Graph Paper | FreeGridPaper', h1: 'Knitting Graph Paper', quickDownloadText: 'Knitting Graph' },
   '/graph': { paperType: 'graph-paper', pageSize: 'Letter', title: 'Standard Graph Paper | FreeGridPaper', h1: 'Standard Graph Paper', quickDownloadText: 'Graph Paper (Letter)' },
   '/dot-grid': { paperType: 'dot-grid', pageSize: 'A4', title: 'Dot Grid Paper | FreeGridPaper', h1: 'Dot Grid Paper', quickDownloadText: 'Dot Grid (A4)' },
+  '/handwriting': { paperType: 'handwriting', pageSize: 'Letter', title: 'Handwriting Practice Paper | FreeGridPaper', h1: 'Handwriting Practice Paper', quickDownloadText: 'Handwriting Paper (Letter)', lineHeight: 15 },
+  '/guitar-tab': { paperType: 'guitar-tab', pageSize: 'Letter', title: 'Guitar Tablature PDF | FreeGridPaper', h1: 'Guitar Tablature', quickDownloadText: 'Guitar Tab (Letter)' },
+  '/bass-tab': { paperType: 'bass-tab', pageSize: 'Letter', title: 'Bass Tablature PDF | FreeGridPaper', h1: 'Bass Tablature', quickDownloadText: 'Bass Tab (Letter)' },
+  '/genkoyoushi': { paperType: 'genkoyoushi', pageSize: 'A4', title: 'Genkoyoushi Japanese Manuscript Paper | FreeGridPaper', h1: 'Genkoyoushi Paper', quickDownloadText: 'Genkoyoushi (A4)', genkoyoushiSize: 10 },
+  '/perspective-1': { paperType: 'perspective-grid', title: '1-Point Perspective Grid | FreeGridPaper', h1: '1-Point Perspective', quickDownloadText: '1-Point Perspective', perspectiveType: '1-point' },
+  '/perspective-2': { paperType: 'perspective-grid', title: '2-Point Perspective Grid | FreeGridPaper', h1: '2-Point Perspective', quickDownloadText: '2-Point Perspective', perspectiveType: '2-point' },
+  '/comic-2x3': { paperType: 'comic-layout', title: 'Comic Book Template (2x3) | FreeGridPaper', h1: 'Comic Layout (2x3)', quickDownloadText: 'Comic 2x3', comicLayout: '2x3' },
+  '/storyboard': { paperType: 'storyboard', title: 'Storyboard Template | FreeGridPaper', h1: 'Storyboard Template', quickDownloadText: 'Storyboard (3x2)', storyboardCols: 3, storyboardRows: 2 },
+  '/isometric-dots': { paperType: 'isometric-dots', pageSize: 'A4', title: 'Isometric Dot Grid Paper | FreeGridPaper', h1: 'Isometric Dot Grid', quickDownloadText: 'Isometric Dots (A4)' },
+  '/lined-paper': { paperType: 'lined-paper', pageSize: 'Letter', title: 'Lined Paper PDF | FreeGridPaper', h1: 'Lined Paper', quickDownloadText: 'Lined Paper (Letter)' },
+  '/checklist': { paperType: 'checklist', pageSize: 'Letter', title: 'Printable Checklist Paper | FreeGridPaper', h1: 'Checklist Paper', quickDownloadText: 'Checklist (Letter)' },
 };
 
 const TOP_NAV_PRESETS = [
@@ -58,6 +117,11 @@ const TOP_NAV_PRESETS = [
   { label: 'Engineering', route: '/engineering' },
   { label: 'Poster Size', route: '/poster-size' },
   { label: 'Poster Hex (D&D)', route: '/poster-hex' },
+  { label: 'Handwriting', route: '/handwriting' },
+  { label: 'Guitar Tab', route: '/guitar-tab' },
+  { label: 'Genkoyoushi', route: '/genkoyoushi' },
+  { label: 'Perspective', route: '/perspective-1' },
+  { label: 'Storyboard', route: '/storyboard' },
 ];
 
 interface Settings {
@@ -80,9 +144,15 @@ interface Settings {
   stitchWidth: number;
   stitchHeight: number;
   calligraphyAngle: number;
+  showHandwritingSlant: boolean;
+  genkoyoushiSize: number;
   showRulers: boolean;
   backgroundColor: string;
   useCustomBackground: boolean;
+  perspectiveType: '1-point' | '2-point';
+  comicLayout: '2x3' | '3x3' | 'splash';
+  storyboardCols: number;
+  storyboardRows: number;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -105,9 +175,15 @@ const DEFAULT_SETTINGS: Settings = {
   stitchWidth: 5,
   stitchHeight: 7.5,
   calligraphyAngle: 55,
+  showHandwritingSlant: false,
+  genkoyoushiSize: 10,
   showRulers: false,
   backgroundColor: '#ffffff',
   useCustomBackground: false,
+  perspectiveType: '1-point',
+  comicLayout: '2x3',
+  storyboardCols: 3,
+  storyboardRows: 2,
 };
 
 const PAPER_TYPE_LABELS: Record<PaperType, string> = {
@@ -120,6 +196,13 @@ const PAPER_TYPE_LABELS: Record<PaperType, string> = {
   'hex-grid': 'Hexagon Grid',
   'knitting': 'Knitting/Cross-Stitch',
   'calligraphy': 'Calligraphy',
+  'handwriting': 'Handwriting Practice',
+  'guitar-tab': 'Guitar Tab',
+  'bass-tab': 'Bass Tab',
+  'genkoyoushi': 'Genkoyoushi (Japanese)',
+  'perspective-grid': 'Perspective Grid',
+  'comic-layout': 'Comic Book Layout',
+  'storyboard': 'Storyboard Template',
 };
 
 const PAPER_TYPE_TO_ROUTE: Partial<Record<PaperType, string>> = {
@@ -129,6 +212,26 @@ const PAPER_TYPE_TO_ROUTE: Partial<Record<PaperType, string>> = {
   'knitting': '/knitting',
   'graph-paper': '/graph',
   'dot-grid': '/dot-grid',
+  'handwriting': '/handwriting',
+  'guitar-tab': '/guitar-tab',
+  'bass-tab': '/bass-tab',
+  'genkoyoushi': '/genkoyoushi',
+  'perspective-grid': '/perspective-1',
+  'comic-layout': '/comic-2x3',
+  'storyboard': '/storyboard',
+  'isometric-dots': '/isometric-dots',
+  'lined-paper': '/lined-paper',
+  'checklist': '/checklist',
+};
+
+const updateMetaDescription = (content: string) => {
+  let meta = document.querySelector('meta[name="description"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'description');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', content);
 };
 
 export default function Home() {
@@ -136,17 +239,25 @@ export default function Home() {
   const [pageTitle, setPageTitle] = useState('FreeGridPaper');
   const [pageH1, setPageH1] = useState('FreeGridPaper');
   const [quickDownloadText, setQuickDownloadText] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
     const preset = ROUTE_PRESETS[location];
+    let baseSettings = DEFAULT_SETTINGS;
+
     if (preset) {
       document.title = preset.title;
       setPageTitle(preset.title);
       setPageH1(preset.h1);
       setQuickDownloadText(preset.quickDownloadText || null);
-      setSettings({
+
+      const desc = SEO_DATA[preset.paperType]?.description || "Free printable grid paper generator.";
+      updateMetaDescription(desc);
+
+      baseSettings = {
         ...DEFAULT_SETTINGS,
         paperType: preset.paperType,
         pageSize: preset.pageSize || DEFAULT_SETTINGS.pageSize,
@@ -155,30 +266,51 @@ export default function Home() {
         customColor: preset.customColor || DEFAULT_SETTINGS.customColor,
         backgroundColor: preset.backgroundColor || DEFAULT_SETTINGS.backgroundColor,
         useCustomBackground: preset.backgroundColor ? true : false,
-      });
+      };
     } else {
       document.title = 'FreeGridPaper - Free Printable Grid Paper Generator';
       setPageTitle('FreeGridPaper');
       setPageH1('FreeGridPaper');
       setQuickDownloadText(null);
+
+      const saved = localStorage.getItem('freegridpaper-settings');
+      let savedType = DEFAULT_SETTINGS.paperType;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          baseSettings = { ...DEFAULT_SETTINGS, ...parsed };
+          savedType = parsed.paperType || DEFAULT_SETTINGS.paperType;
+        } catch (e) { }
+      }
+
+      const desc = SEO_DATA[savedType]?.description || "Free printable grid paper generator. Download custom graph paper, dot grid, lined paper, and more in PDF format.";
+      updateMetaDescription(desc);
     }
+
+    // Apply URL overrides on top of base settings
+    const urlOverrides = parseUrlParams(DEFAULT_SETTINGS);
+    setSettings(urlOverrides ? { ...baseSettings, ...urlOverrides } : baseSettings);
+
   }, [location]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('freegridpaper-settings');
-    if (saved && !ROUTE_PRESETS[location]) {
-      try {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
-      } catch (e) {
-        console.error('Failed to load settings:', e);
-      }
-    }
-  }, []);
-
+  // Sync settings to localStorage and update canvas
   useEffect(() => {
     localStorage.setItem('freegridpaper-settings', JSON.stringify(settings));
     drawCanvas();
   }, [settings]);
+
+  const copyShareLink = () => {
+    const params = new URLSearchParams();
+    (Object.keys(settings) as Array<keyof Settings>).forEach(key => {
+      const val = settings[key];
+      params.set(key, encodeURIComponent(JSON.stringify(val)));
+    });
+
+    const url = `${window.location.origin}${location}?${params.toString()}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     if (ROUTE_PRESETS[location]) {
@@ -200,12 +332,12 @@ export default function Home() {
     const pageSize = getPageDimensions();
     const isMobile = window.innerWidth < 800;
     const dpr = window.devicePixelRatio || 1;
-    
+
     const maxCanvasPixels = isMobile ? 1080 : 2048;
     const maxDimension = Math.max(pageSize.width, pageSize.height);
     const naturalScale = 1.5;
     const maxScale = maxCanvasPixels / (maxDimension * dpr);
-    
+
     return Math.min(naturalScale, maxScale);
   };
 
@@ -214,15 +346,15 @@ export default function Home() {
     const scale = getCanvasScale();
     const maxPreviewHeight = 500;
     const maxPreviewWidth = 400;
-    
+
     let previewWidth = pageSize.width * scale;
     let previewHeight = pageSize.height * scale;
-    
+
     if (previewHeight > maxPreviewHeight || previewWidth > maxPreviewWidth) {
       previewWidth = Math.min(previewWidth, maxPreviewWidth);
       previewHeight = Math.min(previewHeight, maxPreviewHeight);
     }
-    
+
     return { previewWidth, previewHeight, fullWidth: pageSize.width * scale, fullHeight: pageSize.height * scale };
   };
 
@@ -245,7 +377,7 @@ export default function Home() {
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(scale * dpr, scale * dpr);
-    
+
     ctx.fillStyle = settings.useCustomBackground ? settings.backgroundColor : '#ffffff';
     ctx.fillRect(0, 0, pageSize.width, pageSize.height);
 
@@ -281,6 +413,27 @@ export default function Home() {
       case 'calligraphy':
         drawCalligraphy(ctx, pageSize.width, pageSize.height);
         break;
+      case 'handwriting':
+        drawHandwriting(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'guitar-tab':
+        drawGuitarTab(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'bass-tab':
+        drawBassTab(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'genkoyoushi':
+        drawGenkoyoushi(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'perspective-grid':
+        drawPerspectiveGrid(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'comic-layout':
+        drawComicLayout(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'storyboard':
+        drawStoryboard(ctx, pageSize.width, pageSize.height);
+        break;
     }
   };
 
@@ -296,55 +449,47 @@ export default function Home() {
     return colorMap[settings.gridColor];
   };
 
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? [
-      parseInt(result[1], 16),
-      parseInt(result[2], 16),
-      parseInt(result[3], 16)
-    ] : [0, 0, 0];
-  };
 
   const drawRulers = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const rulerWidth = 10;
     const tickSmall = 2;
     const tickMedium = 4;
     const tickLarge = 6;
-    
+
     ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, width, rulerWidth);
     ctx.fillRect(0, 0, rulerWidth, height);
-    
+
     ctx.strokeStyle = '#666666';
     ctx.lineWidth = 0.3;
     ctx.fillStyle = '#333333';
     ctx.font = '2px sans-serif';
-    
+
     const unitSize = settings.unit === 'mm' ? 1 : 25.4;
     const majorTick = settings.unit === 'mm' ? 10 : 1;
     const minorTick = settings.unit === 'mm' ? 1 : 0.125;
-    
+
     for (let x = 0; x <= width; x += minorTick * unitSize) {
       const isMajor = Math.abs(x % (majorTick * unitSize)) < 0.01;
       const isMedium = settings.unit === 'mm' ? Math.abs(x % (5 * unitSize)) < 0.01 : Math.abs(x % (0.5 * unitSize)) < 0.01;
       const tickHeight = isMajor ? tickLarge : (isMedium ? tickMedium : tickSmall);
-      
+
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, tickHeight);
       ctx.stroke();
-      
+
       if (isMajor && x > 0) {
         const label = settings.unit === 'mm' ? `${Math.round(x)}` : `${(x / 25.4).toFixed(0)}`;
         ctx.fillText(label, x + 0.5, rulerWidth - 1);
       }
     }
-    
+
     for (let y = 0; y <= height; y += minorTick * unitSize) {
       const isMajor = Math.abs(y % (majorTick * unitSize)) < 0.01;
       const isMedium = settings.unit === 'mm' ? Math.abs(y % (5 * unitSize)) < 0.01 : Math.abs(y % (0.5 * unitSize)) < 0.01;
       const tickHeight = isMajor ? tickLarge : (isMedium ? tickMedium : tickSmall);
-      
+
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(tickHeight, y);
@@ -380,7 +525,7 @@ export default function Home() {
     const spacing = Math.max(5, Math.min(30, settings.dotSpacing));
     const size = Math.max(1, Math.min(3, settings.dotSize));
     const opacity = Math.max(0.1, Math.min(1, settings.dotOpacity));
-    
+
     const color = settings.useCustomColor ? hexToRgb(settings.customColor) : [0, 0, 0];
     ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
     const hexSpacing = spacing * Math.sqrt(3) / 2;
@@ -407,7 +552,7 @@ export default function Home() {
   const drawGraphPaper = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const gridSize = Math.max(1, Math.min(20, settings.gridSize));
     const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
-    
+
     ctx.strokeStyle = getColorStyle();
     ctx.lineWidth = weight;
 
@@ -428,7 +573,7 @@ export default function Home() {
 
   const drawLinedPaper = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const lineHeight = Math.max(5, Math.min(15, settings.lineHeight));
-    
+
     ctx.strokeStyle = '#cccccc';
     ctx.lineWidth = 0.5;
 
@@ -485,7 +630,7 @@ export default function Home() {
 
   const drawChecklist = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const lineHeight = Math.max(5, Math.min(15, settings.lineHeight));
-    
+
     ctx.strokeStyle = '#cccccc';
     ctx.lineWidth = 0.5;
 
@@ -517,7 +662,7 @@ export default function Home() {
   const drawHexGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const hexSizeMM = settings.hexSize;
     const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
-    
+
     ctx.strokeStyle = getColorStyle();
     ctx.lineWidth = weight;
 
@@ -556,7 +701,7 @@ export default function Home() {
     const cellWidth = Math.max(2, Math.min(15, settings.stitchWidth));
     const cellHeight = Math.max(2, Math.min(20, settings.stitchHeight));
     const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
-    
+
     ctx.strokeStyle = getColorStyle();
     ctx.lineWidth = weight;
 
@@ -579,7 +724,7 @@ export default function Home() {
     const lineHeight = Math.max(5, Math.min(15, settings.lineHeight));
     const angle = settings.calligraphyAngle;
     const angleRad = (angle * Math.PI) / 180;
-    
+
     ctx.strokeStyle = '#cccccc';
     ctx.lineWidth = 0.5;
 
@@ -596,7 +741,7 @@ export default function Home() {
 
     const slantSpacing = 5;
     const dx = Math.tan(angleRad) * height;
-    
+
     for (let x = -dx; x < width + dx; x += slantSpacing) {
       ctx.beginPath();
       ctx.moveTo(x, height);
@@ -607,20 +752,338 @@ export default function Home() {
     ctx.globalAlpha = 1;
   };
 
+  const drawHandwriting = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const lineHeight = Math.max(5, Math.min(30, settings.lineHeight));
+    const gap = lineHeight * 0.5; // Gap between rows
+    const rowHeight = lineHeight + gap;
+    const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
+
+    // Slant calculation (15 degrees if enabled)
+    const angleRad = 15 * Math.PI / 180;
+    const slantOffset = settings.showHandwritingSlant ? Math.tan(angleRad) * lineHeight : 0;
+
+    for (let y = gap + lineHeight; y < height; y += rowHeight) {
+      const baseY = y;
+      const midY = y - lineHeight / 2;
+      const topY = y - lineHeight;
+
+      // Draw Slant Lines (Background, lighter)
+      if (settings.showHandwritingSlant) {
+        ctx.strokeStyle = '#e5e5e5';
+        ctx.lineWidth = 0.2;
+        ctx.setLineDash([]);
+        const slantSpacing = lineHeight;
+
+        // Simple slant grid
+        for (let x = -lineHeight; x < width + lineHeight; x += slantSpacing) {
+          ctx.beginPath();
+          ctx.moveTo(x + slantOffset, topY);
+          ctx.lineTo(x, baseY);
+          ctx.stroke();
+        }
+      }
+
+      // Top Line (Solid)
+      ctx.strokeStyle = getColorStyle();
+      ctx.lineWidth = weight;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(0, topY);
+      ctx.lineTo(width, topY);
+      ctx.stroke();
+
+      // Mid Line (Dashed)
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = weight * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(0, midY);
+      ctx.lineTo(width, midY);
+      ctx.stroke();
+
+      // Base Line (Solid)
+      ctx.setLineDash([]);
+      ctx.lineWidth = weight;
+      ctx.beginPath();
+      ctx.moveTo(0, baseY);
+      ctx.lineTo(width, baseY);
+      ctx.stroke();
+    }
+  };
+
+  const drawGuitarTab = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const staves = Math.min(Math.max(settings.stavesPerPage, 4), 10);
+    const lineSpacing = 3; // 3mm spacing looks good for tab
+    const staffHeight = lineSpacing * 5; // 6 lines = 5 spaces
+    const availableHeight = height - 40;
+    const totalStaffHeight = Math.min(staffHeight + 25, availableHeight / staves);
+    const startY = 20;
+
+    for (let i = 0; i < staves && (startY + i * totalStaffHeight + staffHeight) < height; i++) {
+      const y = startY + i * totalStaffHeight;
+      ctx.strokeStyle = getColorStyle();
+      ctx.lineWidth = settings.lineWeight;
+      ctx.beginPath();
+
+      // Draw 6 lines
+      for (let line = 0; line < 6; line++) {
+        const ly = y + line * lineSpacing;
+        ctx.moveTo(0, ly);
+        ctx.lineTo(width, ly);
+      }
+      ctx.stroke();
+
+      // Vertical bars at ends
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(0, y + staffHeight);
+      ctx.moveTo(width, y);
+      ctx.lineTo(width, y + staffHeight);
+      ctx.stroke();
+
+      // TAB label? optional.
+      ctx.font = `${lineSpacing * 2.5}px sans-serif`;
+      ctx.fillStyle = getColorStyle() === '#000000' ? '#000000' : '#666';
+      ctx.fillText("T", 5, y + lineSpacing * 1.8);
+      ctx.fillText("A", 5, y + lineSpacing * 3.2);
+      ctx.fillText("B", 5, y + lineSpacing * 4.6);
+    }
+  };
+
+  const drawBassTab = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const staves = Math.min(Math.max(settings.stavesPerPage, 4), 12);
+    const lineSpacing = 3.5; // Slightly larger for bass
+    const staffHeight = lineSpacing * 3; // 4 lines = 3 spaces
+    const availableHeight = height - 40;
+    const totalStaffHeight = Math.min(staffHeight + 25, availableHeight / staves);
+    const startY = 20;
+
+    for (let i = 0; i < staves && (startY + i * totalStaffHeight + staffHeight) < height; i++) {
+      const y = startY + i * totalStaffHeight;
+      ctx.strokeStyle = getColorStyle();
+      ctx.lineWidth = settings.lineWeight;
+      ctx.beginPath();
+
+      // Draw 4 lines
+      for (let line = 0; line < 4; line++) {
+        const ly = y + line * lineSpacing;
+        ctx.moveTo(0, ly);
+        ctx.lineTo(width, ly);
+      }
+      ctx.stroke();
+
+      // Vertical bars at ends
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(0, y + staffHeight);
+      ctx.moveTo(width, y);
+      ctx.lineTo(width, y + staffHeight);
+      ctx.stroke();
+
+      // TAB label
+      ctx.font = `${lineSpacing * 2.5}px sans-serif`;
+      ctx.fillStyle = getColorStyle() === '#000000' ? '#000000' : '#666';
+      ctx.fillText("T", 5, y + lineSpacing * 1.8);
+      ctx.fillText("A", 5, y + lineSpacing * 2.8);
+      ctx.fillText("B", 5, y + lineSpacing * 3.8); // Adjust position
+    }
+  };
+
+  const drawGenkoyoushi = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const size = Math.max(5, Math.min(20, settings.genkoyoushiSize));
+    const gap = 2; // Gap between columns/rows
+    // Usually vertical columns. We'll do columns.
+    // 20x10 or so.
+
+    // Let's standard horizontal rows for simplicity unless user wants vertical.
+    // Standard Japanese manuscript is vertical columns right-to-left.
+    // But "Graph Paper" usually implies a grid.
+    // The "Genkoyoushi" preset is usually vertical columns for writing logic.
+    // Let's implement vertical columns of squares.
+    // BUT, Western printers are portrait/landscape.
+    // Let's do horizontal rows of squares (easier to use for westerners learning).
+
+    // We'll do horizontal rows.
+    const colSpacing = 0;
+    const rowSpacing = size * 0.4; // Gap between rows for furigana/ruby
+
+    const cols = Math.floor((width - 20) / size);
+    const rows = Math.floor((height - 20) / (size + rowSpacing));
+
+    const startX = (width - cols * size) / 2;
+    const startY = (height - (rows * (size + rowSpacing))) / 2;
+
+    for (let r = 0; r < rows; r++) {
+      const y = startY + r * (size + rowSpacing);
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * size;
+
+        ctx.strokeStyle = getColorStyle();
+        ctx.lineWidth = settings.lineWeight;
+        ctx.setLineDash([]);
+        ctx.strokeRect(x, y, size, size);
+
+        // Dotted cross
+        ctx.setLineDash([1, 2]);
+        ctx.lineWidth = 0.2;
+        ctx.beginPath();
+        ctx.moveTo(x + size / 2, y);
+        ctx.lineTo(x + size / 2, y + size);
+        ctx.moveTo(x, y + size / 2);
+        ctx.lineTo(x + size, y + size / 2);
+        ctx.stroke();
+      }
+    }
+  };
+
+  const drawPerspectiveGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = getColorStyle();
+    ctx.lineWidth = settings.lineWeight; // Main lines
+    ctx.beginPath();
+
+    const horizonY = height / 2;
+
+    // Horizon Line
+    ctx.moveTo(0, horizonY);
+    ctx.lineTo(width, horizonY);
+    ctx.stroke();
+
+    if (settings.perspectiveType === '1-point') {
+      const centerX = width / 2;
+      const centerY = horizonY;
+      const density = 20; // Number of radiating lines
+
+      for (let i = 0; i < density; i++) {
+        const angle = (Math.PI * 2 * i) / density;
+        // Extend lines off canvas
+        const maxLength = Math.max(width, height) * 1.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + Math.cos(angle) * maxLength, centerY + Math.sin(angle) * maxLength);
+        ctx.stroke();
+      }
+    } else {
+      // 2-point
+      const vp1X = -width * 0.5; // Left VP off-screen
+      const vp2X = width * 1.5;  // Right VP off-screen
+      const centerY = horizonY;
+      const density = 20;
+
+      // Radiating from left
+      for (let i = 0; i <= density; i++) {
+        // Fan out vertically at center
+        const t = i / density;
+        const targetY = -height + (3 * height) * t;
+        ctx.beginPath();
+        ctx.moveTo(vp1X, centerY);
+        ctx.lineTo(width, targetY);
+        ctx.stroke();
+      }
+
+      // Radiating from right
+      for (let i = 0; i <= density; i++) {
+        const t = i / density;
+        const targetY = -height + (3 * height) * t;
+        ctx.beginPath();
+        ctx.moveTo(vp2X, centerY);
+        ctx.lineTo(0, targetY);
+        ctx.stroke();
+      }
+    }
+  };
+
+  const drawComicLayout = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = getColorStyle();
+    ctx.lineWidth = 2; // Thicker border for panels
+
+    const margin = 15; // 15mm margin
+    const panelGap = 5;
+
+    const usableWidth = width - margin * 2;
+    const usableHeight = height - margin * 2;
+    const startX = margin;
+    const startY = margin;
+
+    let rows = 3;
+    let cols = 2;
+
+    if (settings.comicLayout === '3x3') { cols = 3; rows = 3; }
+    if (settings.comicLayout === 'splash') { cols = 1; rows = 1; }
+
+    const panelWidth = (usableWidth - (cols - 1) * panelGap) / cols;
+    const panelHeight = (usableHeight - (rows - 1) * panelGap) / rows;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * (panelWidth + panelGap);
+        const y = startY + r * (panelHeight + panelGap);
+        ctx.strokeRect(x, y, panelWidth, panelHeight);
+      }
+    }
+  };
+
+  const drawStoryboard = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = getColorStyle();
+
+    const margin = 15;
+    const gapX = 10;
+    const gapY = 30; // More gap vertically for lines
+
+    const cols = settings.storyboardCols || 3;
+    const rows = settings.storyboardRows || 2;
+
+    const totalGapX = (cols - 1) * gapX;
+    const availableWidth = width - margin * 2 - totalGapX;
+    const frameWidth = availableWidth / cols;
+    const frameHeight = frameWidth * (9 / 16); // 16:9 aspect ratio
+
+    // Check if we fit vertically
+    // If not, scale down? Or just flow. For now, assume fit or static.
+
+    const startX = margin;
+    const startY = margin;
+
+    for (let r = 0; r < rows; r++) {
+      const rowY = startY + r * (frameHeight + gapY);
+
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * (frameWidth + gapX);
+
+        // Frame
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, rowY, frameWidth, frameHeight);
+
+        // Lines below
+        ctx.lineWidth = 0.5;
+        const lineAreaY = rowY + frameHeight + 5;
+        const lineAreaH = gapY - 10;
+        const lineCount = 3;
+        const lineStep = lineAreaH / lineCount;
+
+        for (let l = 1; l <= lineCount; l++) {
+          const ly = lineAreaY + l * lineStep;
+          ctx.beginPath();
+          ctx.moveTo(x, ly);
+          ctx.lineTo(x + frameWidth, ly);
+          ctx.stroke();
+        }
+      }
+    }
+  };
+
   const downloadPDF = (paperType?: PaperType) => {
     const type = paperType || settings.paperType;
     const pageSize = getPageDimensions();
-    
+
     let format: string | [number, number];
     const standardFormats = ['a4', 'letter', 'legal', 'a0', 'a1', 'a2'];
     const lowerPageSize = settings.pageSize.toLowerCase();
-    
+
     if (standardFormats.includes(lowerPageSize)) {
       format = lowerPageSize as 'a4' | 'letter' | 'legal' | 'a0' | 'a1' | 'a2';
     } else {
       format = [pageSize.width, pageSize.height];
     }
-    
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -670,6 +1133,27 @@ export default function Home() {
       case 'calligraphy':
         drawCalligraphyPDF(doc, width, height, tempSettings);
         break;
+      case 'handwriting':
+        drawHandwritingPDF(doc, width, height, tempSettings);
+        break;
+      case 'guitar-tab':
+        drawGuitarTabPDF(doc, width, height, tempSettings);
+        break;
+      case 'bass-tab':
+        drawBassTabPDF(doc, width, height, tempSettings);
+        break;
+      case 'genkoyoushi':
+        drawGenkoyoushiPDF(doc, width, height, tempSettings);
+        break;
+      case 'perspective-grid':
+        drawPerspectiveGridPDF(doc, width, height, tempSettings);
+        break;
+      case 'comic-layout':
+        drawComicLayoutPDF(doc, width, height, tempSettings);
+        break;
+      case 'storyboard':
+        drawStoryboardPDF(doc, width, height, tempSettings);
+        break;
     }
 
     const filename = `${type}-${settings.pageSize}-${Date.now()}.pdf`;
@@ -680,17 +1164,17 @@ export default function Home() {
     if (settings.batchPaperTypes.length === 0) return;
 
     const pageSize = getPageDimensions();
-    
+
     let format: string | [number, number];
     const standardFormats = ['a4', 'letter', 'legal', 'a0', 'a1', 'a2'];
     const lowerPageSize = settings.pageSize.toLowerCase();
-    
+
     if (standardFormats.includes(lowerPageSize)) {
       format = lowerPageSize as 'a4' | 'letter' | 'legal' | 'a0' | 'a1' | 'a2';
     } else {
       format = [pageSize.width, pageSize.height];
     }
-    
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -747,6 +1231,27 @@ export default function Home() {
         case 'calligraphy':
           drawCalligraphyPDF(doc, width, height, tempSettings);
           break;
+        case 'handwriting':
+          drawHandwritingPDF(doc, width, height, tempSettings);
+          break;
+        case 'guitar-tab':
+          drawGuitarTabPDF(doc, width, height, tempSettings);
+          break;
+        case 'bass-tab':
+          drawBassTabPDF(doc, width, height, tempSettings);
+          break;
+        case 'genkoyoushi':
+          drawGenkoyoushiPDF(doc, width, height, tempSettings);
+          break;
+        case 'perspective-grid':
+          drawPerspectiveGridPDF(doc, width, height, tempSettings);
+          break;
+        case 'comic-layout':
+          drawComicLayoutPDF(doc, width, height, tempSettings);
+          break;
+        case 'storyboard':
+          drawStoryboardPDF(doc, width, height, tempSettings);
+          break;
       }
     });
 
@@ -759,25 +1264,25 @@ export default function Home() {
     const tickSmall = 2;
     const tickMedium = 4;
     const tickLarge = 6;
-    
+
     doc.setFillColor(240, 240, 240);
     doc.rect(0, 0, width, rulerWidth, 'F');
     doc.rect(0, 0, rulerWidth, height, 'F');
-    
+
     doc.setDrawColor(102, 102, 102);
     doc.setLineWidth(0.1);
-    
+
     const unitSize = settings.unit === 'mm' ? 1 : 25.4;
     const majorTick = settings.unit === 'mm' ? 10 : 1;
     const minorTick = settings.unit === 'mm' ? 1 : 0.125;
-    
+
     for (let x = 0; x <= width; x += minorTick * unitSize) {
       const isMajor = Math.abs(x % (majorTick * unitSize)) < 0.01;
       const isMedium = settings.unit === 'mm' ? Math.abs(x % (5 * unitSize)) < 0.01 : Math.abs(x % (0.5 * unitSize)) < 0.01;
       const tickHeight = isMajor ? tickLarge : (isMedium ? tickMedium : tickSmall);
       doc.line(x, 0, x, tickHeight);
     }
-    
+
     for (let y = 0; y <= height; y += minorTick * unitSize) {
       const isMajor = Math.abs(y % (majorTick * unitSize)) < 0.01;
       const isMedium = settings.unit === 'mm' ? Math.abs(y % (5 * unitSize)) < 0.01 : Math.abs(y % (0.5 * unitSize)) < 0.01;
@@ -813,11 +1318,11 @@ export default function Home() {
     const spacing = Math.max(5, Math.min(30, opts.dotSpacing));
     const size = Math.max(1, Math.min(3, opts.dotSize));
     const opacity = Math.max(0.1, Math.min(1, opts.dotOpacity));
-    
+
     const color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
     doc.setFillColor(color[0], color[1], color[2]);
     (doc as any).setGState(new (doc as any).GState({ opacity }));
-    
+
     const hexSpacing = spacing * Math.sqrt(3) / 2;
     const vertSpacing = spacing * 1.5;
 
@@ -840,7 +1345,7 @@ export default function Home() {
   const drawGraphPaperPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
     const gridSize = Math.max(1, Math.min(20, opts.gridSize));
     const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
-    
+
     let color;
     if (opts.useCustomColor) {
       color = hexToRgb(opts.customColor);
@@ -852,7 +1357,7 @@ export default function Home() {
       };
       color = colorMap[opts.gridColor];
     }
-    
+
     doc.setDrawColor(color[0], color[1], color[2]);
     doc.setLineWidth(weight);
 
@@ -867,7 +1372,7 @@ export default function Home() {
 
   const drawLinedPaperPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
     const lineHeight = Math.max(5, Math.min(15, opts.lineHeight));
-    
+
     doc.setDrawColor(204, 204, 204);
     doc.setLineWidth(0.5);
 
@@ -908,9 +1413,126 @@ export default function Home() {
     }
   };
 
+
+
+  const drawPerspectiveGridPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    let color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
+    if (!opts.useCustomColor && opts.gridColor !== 'black') {
+      const colorMap: Record<string, number[]> = { cyan: [56, 189, 248], gray: [102, 102, 102] };
+      color = colorMap[opts.gridColor] || [0, 0, 0];
+    }
+    doc.setDrawColor(color[0], color[1], color[2]);
+    doc.setLineWidth(opts.lineWeight);
+
+    const horizonY = height / 2;
+    doc.line(0, horizonY, width, horizonY);
+
+    if (opts.perspectiveType === '1-point') {
+      const centerX = width / 2;
+      const centerY = horizonY;
+      const density = 20;
+
+      for (let i = 0; i < density; i++) {
+        const angle = (Math.PI * 2 * i) / density;
+        const maxLength = Math.max(width, height) * 1.5;
+        const endX = centerX + Math.cos(angle) * maxLength;
+        const endY = centerY + Math.sin(angle) * maxLength;
+        doc.line(centerX, centerY, endX, endY);
+      }
+    } else {
+      const vp1X = -width * 0.5;
+      const vp2X = width * 1.5;
+      const centerY = horizonY;
+      const density = 20;
+
+      for (let i = 0; i <= density; i++) {
+        const t = i / density;
+        const targetY = -height + (3 * height) * t;
+        doc.line(vp1X, centerY, width, targetY);
+      }
+      for (let i = 0; i <= density; i++) {
+        const t = i / density;
+        const targetY = -height + (3 * height) * t;
+        doc.line(vp2X, centerY, 0, targetY);
+      }
+    }
+  };
+
+  const drawComicLayoutPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    let color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
+    doc.setDrawColor(color[0], color[1], color[2]);
+    doc.setLineWidth(0.7);
+
+    const margin = 15;
+    const panelGap = 5;
+    const usableWidth = width - margin * 2;
+    const usableHeight = height - margin * 2;
+    const startX = margin;
+    const startY = margin;
+
+    let rows = 3;
+    let cols = 2;
+    if (opts.comicLayout === '3x3') { cols = 3; rows = 3; }
+    if (opts.comicLayout === 'splash') { cols = 1; rows = 1; }
+
+    const panelWidth = (usableWidth - (cols - 1) * panelGap) / cols;
+    const panelHeight = (usableHeight - (rows - 1) * panelGap) / rows;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * (panelWidth + panelGap);
+        const y = startY + r * (panelHeight + panelGap);
+        doc.rect(x, y, panelWidth, panelHeight);
+      }
+    }
+  };
+
+  const drawStoryboardPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    let color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
+    doc.setDrawColor(color[0], color[1], color[2]);
+
+    const margin = 15;
+    const gapX = 10;
+    const gapY = 30;
+
+    const cols = opts.storyboardCols || 3;
+    const rows = opts.storyboardRows || 2;
+
+    const totalGapX = (cols - 1) * gapX;
+    const availableWidth = width - margin * 2 - totalGapX;
+    const frameWidth = availableWidth / cols;
+    const frameHeight = frameWidth * (9 / 16);
+
+    const startX = margin;
+    const startY = margin;
+
+    for (let r = 0; r < rows; r++) {
+      const rowY = startY + r * (frameHeight + gapY);
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * (frameWidth + gapX);
+
+        // Frame
+        doc.setLineWidth(0.5);
+        doc.rect(x, rowY, frameWidth, frameHeight);
+
+        // Lines
+        doc.setLineWidth(0.2);
+        const lineAreaY = rowY + frameHeight + 5;
+        const lineAreaH = gapY - 10;
+        const lineCount = 3;
+        const lineStep = lineAreaH / lineCount;
+
+        for (let l = 1; l <= lineCount; l++) {
+          const ly = lineAreaY + l * lineStep;
+          doc.line(x, ly, x + frameWidth, ly);
+        }
+      }
+    }
+  };
+
   const drawChecklistPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
     const lineHeight = Math.max(5, Math.min(15, opts.lineHeight));
-    
+
     doc.setDrawColor(204, 204, 204);
     doc.setLineWidth(0.5);
 
@@ -936,7 +1558,7 @@ export default function Home() {
   const drawHexGridPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
     const hexSizeMM = opts.hexSize;
     const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
-    
+
     let color;
     if (opts.useCustomColor) {
       color = hexToRgb(opts.customColor);
@@ -948,7 +1570,7 @@ export default function Home() {
       };
       color = colorMap[opts.gridColor];
     }
-    
+
     doc.setDrawColor(color[0], color[1], color[2]);
     doc.setLineWidth(weight);
 
@@ -962,7 +1584,7 @@ export default function Home() {
         const angle = (Math.PI / 3) * i - Math.PI / 6;
         points.push([cx + size * Math.cos(angle), cy + size * Math.sin(angle)]);
       }
-      
+
       for (let i = 0; i < 6; i++) {
         const next = (i + 1) % 6;
         doc.line(points[i][0], points[i][1], points[next][0], points[next][1]);
@@ -983,7 +1605,7 @@ export default function Home() {
     const cellWidth = Math.max(2, Math.min(15, opts.stitchWidth));
     const cellHeight = Math.max(2, Math.min(20, opts.stitchHeight));
     const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
-    
+
     let color;
     if (opts.useCustomColor) {
       color = hexToRgb(opts.customColor);
@@ -995,7 +1617,7 @@ export default function Home() {
       };
       color = colorMap[opts.gridColor];
     }
-    
+
     doc.setDrawColor(color[0], color[1], color[2]);
     doc.setLineWidth(weight);
 
@@ -1012,7 +1634,7 @@ export default function Home() {
     const lineHeight = Math.max(5, Math.min(15, opts.lineHeight));
     const angle = opts.calligraphyAngle;
     const angleRad = (angle * Math.PI) / 180;
-    
+
     doc.setDrawColor(204, 204, 204);
     doc.setLineWidth(0.5);
 
@@ -1031,14 +1653,14 @@ export default function Home() {
       };
       color = colorMap[opts.gridColor];
     }
-    
+
     doc.setDrawColor(color[0], color[1], color[2]);
     doc.setLineWidth(0.2);
     (doc as any).setGState(new (doc as any).GState({ opacity: 0.4 }));
 
     const slantSpacing = 5;
     const dx = Math.tan(angleRad) * height;
-    
+
     for (let x = -dx; x < width + dx; x += slantSpacing) {
       doc.line(x, height, x + dx, 0);
     }
@@ -1046,8 +1668,166 @@ export default function Home() {
     (doc as any).setGState(new (doc as any).GState({ opacity: 1 }));
   };
 
+  const drawHandwritingPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const lineHeight = Math.max(5, Math.min(30, opts.lineHeight));
+    const gap = lineHeight * 0.5;
+    const rowHeight = lineHeight + gap;
+    const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
+
+    const angleRad = 15 * Math.PI / 180;
+    const slantOffset = opts.showHandwritingSlant ? Math.tan(angleRad) * lineHeight : 0;
+
+    let color;
+    if (opts.useCustomColor) {
+      color = hexToRgb(opts.customColor);
+    } else {
+      const colorMap: Record<string, number[]> = {
+        cyan: [56, 189, 248],
+        gray: [102, 102, 102],
+        black: [0, 0, 0],
+      };
+      color = colorMap[opts.gridColor];
+    }
+
+    // Set Main Color
+    doc.setDrawColor(color[0], color[1], color[2]);
+
+    for (let y = gap + lineHeight; y < height; y += rowHeight) {
+      const baseY = y;
+      const midY = y - lineHeight / 2;
+      const topY = y - lineHeight;
+
+      // Slant Lines
+      if (opts.showHandwritingSlant) {
+        doc.setDrawColor(229, 229, 229); // #e5e5e5
+        doc.setLineWidth(0.2);
+        const slantSpacing = lineHeight;
+
+        for (let x = -lineHeight; x < width + lineHeight; x += slantSpacing) {
+          doc.line(x + slantOffset, topY, x, baseY);
+        }
+
+        // Restore color
+        doc.setDrawColor(color[0], color[1], color[2]);
+      }
+
+      // Top Line
+      doc.setLineWidth(weight);
+      doc.line(0, topY, width, topY);
+
+      // Mid Line (Dashed)
+      doc.setLineWidth(weight * 0.8);
+      doc.setLineDashPattern([1, 1], 0); // 1mm dash approx
+      doc.line(0, midY, width, midY);
+      doc.setLineDashPattern([], 0); // Solid
+
+      // Base Line
+      doc.setLineWidth(weight);
+      doc.line(0, baseY, width, baseY);
+    }
+  };
+
+  const drawGuitarTabPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const staves = Math.min(Math.max(opts.stavesPerPage, 4), 10);
+    const lineSpacing = 3;
+    const staffHeight = lineSpacing * 5;
+    const availableHeight = height - 40;
+    const totalStaffHeight = Math.min(staffHeight + 25, availableHeight / staves);
+    const startY = 20;
+
+    let color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
+    if (!opts.useCustomColor && opts.gridColor !== 'black') {
+      const colorMap: Record<string, number[]> = { cyan: [56, 189, 248], gray: [102, 102, 102] };
+      color = colorMap[opts.gridColor] || [0, 0, 0];
+    }
+    doc.setDrawColor(color[0], color[1], color[2]);
+
+    for (let i = 0; i < staves && (startY + i * totalStaffHeight + staffHeight) < height; i++) {
+      const y = startY + i * totalStaffHeight;
+      doc.setLineWidth(opts.lineWeight);
+
+      for (let line = 0; line < 6; line++) {
+        const ly = y + line * lineSpacing;
+        doc.line(0, ly, width, ly);
+      }
+
+      doc.line(0, y, 0, y + staffHeight);
+      doc.line(width, y, width, y + staffHeight);
+
+      // Text
+      doc.setFontSize(lineSpacing * 2.5 * 0.3528); // px to mm approx conversion for font? PDF uses points?
+      // jsPDF font size is in points. 1mm approx 2.8pt.
+      doc.setFontSize(9);
+      doc.text("T", 2, y + lineSpacing * 2.5);
+      doc.text("A", 2, y + lineSpacing * 3.8);
+      doc.text("B", 2, y + lineSpacing * 5.1);
+    }
+  };
+
+  const drawBassTabPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const staves = Math.min(Math.max(opts.stavesPerPage, 4), 12);
+    const lineSpacing = 3.5;
+    const staffHeight = lineSpacing * 3;
+    const availableHeight = height - 40;
+    const totalStaffHeight = Math.min(staffHeight + 25, availableHeight / staves);
+    const startY = 20;
+
+    let color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
+    doc.setDrawColor(color[0], color[1], color[2]);
+
+    for (let i = 0; i < staves && (startY + i * totalStaffHeight + staffHeight) < height; i++) {
+      const y = startY + i * totalStaffHeight;
+      doc.setLineWidth(opts.lineWeight);
+
+      for (let line = 0; line < 4; line++) {
+        const ly = y + line * lineSpacing;
+        doc.line(0, ly, width, ly);
+      }
+
+      doc.line(0, y, 0, y + staffHeight);
+      doc.line(width, y, width, y + staffHeight);
+
+      doc.setFontSize(9);
+      doc.text("T", 2, y + lineSpacing * 2.5);
+      doc.text("A", 2, y + lineSpacing * 3.5);
+      doc.text("B", 2, y + lineSpacing * 4.5); // approximate
+    }
+  };
+
+  const drawGenkoyoushiPDF = (doc: jsPDF, width: number, height: number, opts: Settings) => {
+    const size = Math.max(5, Math.min(20, opts.genkoyoushiSize));
+    const rowSpacing = size * 0.4;
+
+    // Margins
+    const cols = Math.floor((width - 20) / size);
+    const rows = Math.floor((height - 20) / (size + rowSpacing));
+    const startX = (width - cols * size) / 2;
+    const startY = (height - (rows * (size + rowSpacing))) / 2;
+
+    let color = opts.useCustomColor ? hexToRgb(opts.customColor) : [0, 0, 0];
+    doc.setDrawColor(color[0], color[1], color[2]);
+
+    for (let r = 0; r < rows; r++) {
+      const y = startY + r * (size + rowSpacing);
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * size;
+
+        doc.setLineWidth(opts.lineWeight);
+        doc.setLineDashPattern([], 0);
+        doc.rect(x, y, size, size);
+
+        // Dotted cross
+        doc.setLineDashPattern([1, 2], 0);
+        doc.setLineWidth(0.2);
+        doc.line(x + size / 2, y, x + size / 2, y + size);
+        doc.line(x, y + size / 2, x + size, y + size / 2);
+      }
+    }
+    doc.setLineDashPattern([], 0);
+  };
+
   const toggleBatchPaperType = (type: PaperType) => {
-    updateSetting('batchPaperTypes', 
+    updateSetting('batchPaperTypes',
       settings.batchPaperTypes.includes(type)
         ? settings.batchPaperTypes.filter(t => t !== type)
         : [...settings.batchPaperTypes, type]
@@ -1070,12 +1850,36 @@ export default function Home() {
 
   const dismissQuickDownload = () => setQuickDownloadText(null);
 
+  const handleGallerySelect = (route: string) => {
+    setLocation(route);
+    setGalleryOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <nav className="bg-sidebar border-b border-sidebar-border px-2 md:px-4 py-2 flex-shrink-0">
-        <div className="flex items-center gap-2 md:gap-4">
-          <span className="text-xs text-muted-foreground whitespace-nowrap hidden md:inline">Quick Downloads:</span>
-          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-2 md:gap-4 w-full">
+          <div className="flex-shrink-0">
+            <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 border-primary/20 hover:border-primary/50" data-testid="button-open-gallery">
+                  <Grid className="w-4 h-4" />
+                  <span className="hidden sm:inline">All Templates</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Stationery Template Gallery</DialogTitle>
+                </DialogHeader>
+                <TemplateGallery onSelect={handleGallerySelect} />
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="w-px h-6 bg-border mx-1 hidden md:block" />
+
+          <span className="text-xs text-muted-foreground whitespace-nowrap hidden lg:inline">Quick Access:</span>
+          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto scrollbar-hide flex-1 mask-linear-fade">
             {TOP_NAV_PRESETS.map((preset) => (
               <Link key={preset.route} href={preset.route}>
                 <Button
@@ -1097,9 +1901,14 @@ export default function Home() {
           <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <h1 className="text-2xl font-bold text-primary" data-testid="text-app-title">
-                  {pageH1}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-primary" data-testid="text-app-title">
+                    {pageH1}
+                  </h1>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={copyShareLink} title="Copy Link to current settings">
+                    {copiedLink ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                  </Button>
+                </div>
                 <Link href="/faq" className="text-base text-primary hover:underline" data-testid="link-faq-sidebar">
                   FAQ
                 </Link>
@@ -1131,6 +1940,13 @@ export default function Home() {
                     <SelectItem value="checklist" data-testid="option-checklist">Checklist</SelectItem>
                     <SelectItem value="knitting" data-testid="option-knitting">Knitting/Cross-Stitch</SelectItem>
                     <SelectItem value="calligraphy" data-testid="option-calligraphy">Calligraphy</SelectItem>
+                    <SelectItem value="handwriting" data-testid="option-handwriting">Handwriting Practice</SelectItem>
+                    <SelectItem value="guitar-tab" data-testid="option-guitar-tab">Guitar Tablature</SelectItem>
+                    <SelectItem value="bass-tab" data-testid="option-bass-tab">Bass Tablature</SelectItem>
+                    <SelectItem value="genkoyoushi" data-testid="option-genkoyoushi">Genkoyoushi</SelectItem>
+                    <SelectItem value="perspective-grid" data-testid="option-perspective-grid">Perspective Grid</SelectItem>
+                    <SelectItem value="comic-layout" data-testid="option-comic-layout">Comic Book Layout</SelectItem>
+                    <SelectItem value="storyboard" data-testid="option-storyboard">Storyboard Template</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1501,7 +2317,7 @@ export default function Home() {
                       <span className="font-medium">1-inch hexes are standard for D&D miniatures.</span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm">Hex Size (mm)</Label>
                     <div className="flex items-center gap-2">
@@ -1619,7 +2435,7 @@ export default function Home() {
                   <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
                     Rectangular grid for knitting patterns and cross-stitch designs. Adjust the stitch ratio to match your gauge.
                   </p>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm">Stitch Width (mm)</Label>
                     <div className="flex items-center gap-2">
@@ -1771,7 +2587,7 @@ export default function Home() {
                   <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
                     Practice paper with horizontal guide lines and slanted lines for consistent letter angles.
                   </p>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm">Line Height</Label>
                     <div className="flex gap-2">
@@ -1877,6 +2693,235 @@ export default function Home() {
                       />
                     </div>
                   )}
+                </div>
+              )}
+
+              {settings.paperType === 'handwriting' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Handwriting practice paper with dashed midlines to guide letter formation.
+                  </p>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Line Height</Label>
+                      <span className="text-number text-muted-foreground">
+                        {settings.lineHeight}mm
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.lineHeight]}
+                      onValueChange={([value]) => updateSetting('lineHeight', value)}
+                      min={5}
+                      max={30}
+                      step={1}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-slant" className="text-sm">
+                      Show Slant Guides (15°)
+                    </Label>
+                    <Switch
+                      id="show-slant"
+                      checked={settings.showHandwritingSlant}
+                      onCheckedChange={(checked) => updateSetting('showHandwritingSlant', checked)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="handwriting-color" className="text-sm">
+                      Line Color
+                    </Label>
+                    <Select
+                      value={settings.useCustomColor ? 'custom' : settings.gridColor}
+                      onValueChange={(value) => {
+                        if (value === 'custom') {
+                          updateSetting('useCustomColor', true);
+                        } else {
+                          updateSetting('useCustomColor', false);
+                          updateSetting('gridColor', value as 'cyan' | 'gray' | 'black');
+                        }
+                      }}
+                    >
+                      <SelectTrigger id="handwriting-color" className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gray">Gray</SelectItem>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="cyan">Cyan</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input type="color" value={settings.customColor} onChange={(e) => updateSetting('customColor', e.target.value)} className="w-12 h-10 rounded cursor-pointer" />
+                      <Input type="text" value={settings.customColor} onChange={(e) => updateSetting('customColor', e.target.value)} className="flex-1" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.paperType === 'guitar-tab' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Standard 6-line tablature for guitar. Numbers indicate fret positions.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Staves Per Page</Label>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('stavesPerPage', Math.max(4, settings.stavesPerPage - 1))}>−</Button>
+                      <span className="flex-1 text-center text-number">{settings.stavesPerPage}</span>
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('stavesPerPage', Math.min(10, settings.stavesPerPage + 1))}>+</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Line Weight</Label>
+                    <div className="flex justify-between"><span className="text-number text-muted-foreground">{settings.lineWeight}</span></div>
+                    <Slider value={[settings.lineWeight]} onValueChange={([value]) => updateSetting('lineWeight', value)} min={0.1} max={2} step={0.1} />
+                  </div>
+                </div>
+              )}
+
+              {settings.paperType === 'bass-tab' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Standard 4-line tablature for bass guitar.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Staves Per Page</Label>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('stavesPerPage', Math.max(4, settings.stavesPerPage - 1))}>−</Button>
+                      <span className="flex-1 text-center text-number">{settings.stavesPerPage}</span>
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('stavesPerPage', Math.min(12, settings.stavesPerPage + 1))}>+</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Line Weight</Label>
+                    <div className="flex justify-between"><span className="text-number text-muted-foreground">{settings.lineWeight}</span></div>
+                    <Slider value={[settings.lineWeight]} onValueChange={([value]) => updateSetting('lineWeight', value)} min={0.1} max={2} step={0.1} />
+                  </div>
+                </div>
+              )}
+
+              {settings.paperType === 'genkoyoushi' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Traditional Japanese manuscript paper (Genkoyoushi) with square grid.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Square Size (mm)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('genkoyoushiSize', Math.max(5, settings.genkoyoushiSize - 1))}>−</Button>
+                      <span className="flex-1 text-center text-number">{settings.genkoyoushiSize}mm</span>
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('genkoyoushiSize', Math.min(20, settings.genkoyoushiSize + 1))}>+</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Line Weight</Label>
+                    <div className="flex justify-between"><span className="text-number text-muted-foreground">{settings.lineWeight}</span></div>
+                    <Slider value={[settings.lineWeight]} onValueChange={([value]) => updateSetting('lineWeight', value)} min={0.1} max={2} step={0.1} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gen-color" className="text-sm">Line Color</Label>
+                    <Select value={settings.useCustomColor ? 'custom' : settings.gridColor} onValueChange={(value) => { if (value === 'custom') updateSetting('useCustomColor', true); else { updateSetting('useCustomColor', false); updateSetting('gridColor', value as any); } }}>
+                      <SelectTrigger id="gen-color" className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gray">Gray</SelectItem>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="cyan">Cyan</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+
+              {settings.paperType === 'perspective-grid' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Radiating lines for technical drawing and illustration.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Perspective Type</Label>
+                    <div className="flex gap-2">
+                      <Button variant={settings.perspectiveType === '1-point' ? 'default' : 'outline'} onClick={() => updateSetting('perspectiveType', '1-point')} className="flex-1">1-Point</Button>
+                      <Button variant={settings.perspectiveType === '2-point' ? 'default' : 'outline'} onClick={() => updateSetting('perspectiveType', '2-point')} className="flex-1">2-Point</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Line Weight</Label>
+                    <div className="flex justify-between"><span className="text-number text-muted-foreground">{settings.lineWeight}</span></div>
+                    <Slider value={[settings.lineWeight]} onValueChange={([value]) => updateSetting('lineWeight', value)} min={0.1} max={2} step={0.1} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="persp-color" className="text-sm">Line Color</Label>
+                    <Select value={settings.useCustomColor ? 'custom' : settings.gridColor} onValueChange={(value) => { if (value === 'custom') updateSetting('useCustomColor', true); else { updateSetting('useCustomColor', false); updateSetting('gridColor', value as any); } }}>
+                      <SelectTrigger id="persp-color" className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gray">Gray</SelectItem>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="cyan">Cyan</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {settings.paperType === 'comic-layout' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Standard panel layouts for comic creation.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Layout Style</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button variant={settings.comicLayout === '2x3' ? 'default' : 'outline'} onClick={() => updateSetting('comicLayout', '2x3')} size="sm">2x3</Button>
+                      <Button variant={settings.comicLayout === '3x3' ? 'default' : 'outline'} onClick={() => updateSetting('comicLayout', '3x3')} size="sm">3x3</Button>
+                      <Button variant={settings.comicLayout === 'splash' ? 'default' : 'outline'} onClick={() => updateSetting('comicLayout', 'splash')} size="sm">Splash</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="comic-color" className="text-sm">Line Color</Label>
+                    <Select value={settings.useCustomColor ? 'custom' : settings.gridColor} onValueChange={(value) => { if (value === 'custom') updateSetting('useCustomColor', true); else { updateSetting('useCustomColor', false); updateSetting('gridColor', value as any); } }}>
+                      <SelectTrigger id="comic-color" className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gray">Gray</SelectItem>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="cyan">Cyan</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {settings.paperType === 'storyboard' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    16:9 frames with ruled lines for scene description.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Columns: {settings.storyboardCols}</Label>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardCols', Math.max(1, settings.storyboardCols - 1))}>−</Button>
+                      <Slider value={[settings.storyboardCols]} onValueChange={([value]) => updateSetting('storyboardCols', value)} min={1} max={4} step={1} className="flex-1" />
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardCols', Math.min(4, settings.storyboardCols + 1))}>+</Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Rows: {settings.storyboardRows}</Label>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardRows', Math.max(1, settings.storyboardRows - 1))}>−</Button>
+                      <Slider value={[settings.storyboardRows]} onValueChange={([value]) => updateSetting('storyboardRows', value)} min={1} max={5} step={1} className="flex-1" />
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardRows', Math.min(5, settings.storyboardRows + 1))}>+</Button>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -2070,10 +3115,10 @@ export default function Home() {
                 </p>
               )}
             </div>
-            <div 
+            <div
               className="overflow-auto rounded shadow-[0_10px_30px_rgba(0,0,0,0.5)] bg-white"
-              style={{ 
-                maxWidth: '100%', 
+              style={{
+                maxWidth: '100%',
                 maxHeight: isLargeFormat ? '60vh' : '75vh',
               }}
               data-testid="canvas-container"
@@ -2087,32 +3132,8 @@ export default function Home() {
         </main>
       </div>
 
-      <article className="max-w-3xl mx-auto px-4 md:px-6 py-12 space-y-6">
-        <h2 className="text-2xl font-bold text-foreground">Why Use Printable Grid Paper?</h2>
-        <p className="text-base leading-relaxed text-foreground/90">
-          In a digital world, the tactile experience of writing on paper remains superior for memory retention. FreeGridPaper.com allows you to generate custom, high-resolution stationery instantly.
-        </p>
-        
-        <h2 className="text-2xl font-bold text-foreground">Benefits of Dot Grid for Bullet Journaling</h2>
-        <p className="text-base leading-relaxed text-foreground/90">
-          Dot grid paper offers the structure of graph paper with the cleanliness of blank pages. Perfect for UX sketching, calligraphy, and planning.
-        </p>
-        
-        <h2 className="text-2xl font-bold text-foreground">Isometric Dots for Technical Drawing</h2>
-        <p className="text-base leading-relaxed text-foreground/90">
-          Isometric dot grids are perfect for 3D sketching, technical drawing, and engineering diagrams. The hexagonal arrangement enables accurate perspective drawing.
-        </p>
-
-        <h2 className="text-2xl font-bold text-foreground">Hexagon Grids for Tabletop Gaming</h2>
-        <p className="text-base leading-relaxed text-foreground/90">
-          Hex grids are the gold standard for D&D battle maps and wargaming. Our 1-inch hex option is specifically designed for standard miniature bases.
-        </p>
-        
-        <h2 className="text-2xl font-bold text-foreground">How to Print</h2>
-        <p className="text-base leading-relaxed text-foreground/90">
-          These files are vector PDFs. For accurate sizing (e.g., 5mm grid), set your printer to "Actual Size" or "Scale 100%".
-        </p>
-      </article>
+      <SEOContent paperType={settings.paperType} />
+      <AdBanner />
 
       <footer className="bg-sidebar border-t border-sidebar-border py-8">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
