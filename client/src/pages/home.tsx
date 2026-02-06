@@ -331,6 +331,39 @@ export default function Home() {
     setSettings(prev => ({ ...prev, paperType }));
   };
 
+  // Dynamic max calculations based on page size
+  const getMaxStoryboardRows = () => {
+    const pageHeight = PAGE_SIZES[settings.pageSize].height;
+    // Each storyboard row takes ~50mm (16:9 frame + notes), plus margins
+    const rowHeight = 50;
+    const margins = 20;
+    return Math.max(2, Math.floor((pageHeight - margins) / rowHeight));
+  };
+
+  const getMaxStoryboardCols = () => {
+    const pageWidth = PAGE_SIZES[settings.pageSize].width;
+    // Each column needs ~60mm with gutters
+    const colWidth = 55;
+    const margins = 20;
+    return Math.max(1, Math.min(6, Math.floor((pageWidth - margins) / colWidth)));
+  };
+
+  const getMaxMusicStaves = () => {
+    const pageHeight = PAGE_SIZES[settings.pageSize].height;
+    // Each music staff takes ~25mm with spacing
+    const staveHeight = 25;
+    const margins = 30;
+    return Math.max(4, Math.floor((pageHeight - margins) / staveHeight));
+  };
+
+  const getMaxGuitarTabStaves = () => {
+    const pageHeight = PAGE_SIZES[settings.pageSize].height;
+    // Guitar tab stave takes ~30mm with spacing
+    const staveHeight = 30;
+    const margins = 30;
+    return Math.max(3, Math.floor((pageHeight - margins) / staveHeight));
+  };
+
   const getPageDimensions = () => PAGE_SIZES[settings.pageSize];
 
   const getCanvasScale = () => {
@@ -600,7 +633,9 @@ export default function Home() {
   };
 
   const drawMusicStaff = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const staves = Math.min(Math.max(settings.stavesPerPage, 8), 12);
+    // Dynamic max: each staff takes ~25mm with spacing
+    const maxStaves = Math.floor((height - 40) / 25);
+    const staves = Math.min(Math.max(settings.stavesPerPage, 4), maxStaves);
     const staffHeight = 8;
     const lineSpacing = staffHeight / 4;
     const availableHeight = height - 40;
@@ -816,7 +851,9 @@ export default function Home() {
   };
 
   const drawGuitarTab = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const staves = Math.min(Math.max(settings.stavesPerPage, 4), 10);
+    // Dynamic max: each guitar tab staff takes ~30mm with spacing
+    const maxStaves = Math.floor((height - 40) / 30);
+    const staves = Math.min(Math.max(settings.stavesPerPage, 3), maxStaves);
     const lineSpacing = 3; // 3mm spacing looks good for tab
     const staffHeight = lineSpacing * 5; // 6 lines = 5 spaces
     const availableHeight = height - 40;
@@ -855,7 +892,9 @@ export default function Home() {
   };
 
   const drawBassTab = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const staves = Math.min(Math.max(settings.stavesPerPage, 4), 12);
+    // Dynamic max: each bass tab staff takes ~28mm with spacing
+    const maxStaves = Math.floor((height - 40) / 28);
+    const staves = Math.min(Math.max(settings.stavesPerPage, 3), maxStaves);
     const lineSpacing = 3.5; // Slightly larger for bass
     const staffHeight = lineSpacing * 3; // 4 lines = 3 spaces
     const availableHeight = height - 40;
@@ -2964,19 +3003,19 @@ export default function Home() {
                     16:9 frames with ruled lines for scene description.
                   </p>
                   <div className="space-y-2">
-                    <Label className="text-sm">Columns: {settings.storyboardCols}</Label>
+                    <Label className="text-sm">Columns: {settings.storyboardCols} (max {getMaxStoryboardCols()})</Label>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardCols', Math.max(1, settings.storyboardCols - 1))}>−</Button>
-                      <Slider value={[settings.storyboardCols]} onValueChange={([value]) => updateSetting('storyboardCols', value)} min={1} max={4} step={1} className="flex-1" />
-                      <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardCols', Math.min(4, settings.storyboardCols + 1))}>+</Button>
+                      <Slider value={[settings.storyboardCols]} onValueChange={([value]) => updateSetting('storyboardCols', value)} min={1} max={getMaxStoryboardCols()} step={1} className="flex-1" />
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardCols', Math.min(getMaxStoryboardCols(), settings.storyboardCols + 1))}>+</Button>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm">Rows: {settings.storyboardRows}</Label>
+                    <Label className="text-sm">Rows: {settings.storyboardRows} (max {getMaxStoryboardRows()})</Label>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardRows', Math.max(1, settings.storyboardRows - 1))}>−</Button>
-                      <Slider value={[settings.storyboardRows]} onValueChange={([value]) => updateSetting('storyboardRows', value)} min={1} max={5} step={1} className="flex-1" />
-                      <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardRows', Math.min(5, settings.storyboardRows + 1))}>+</Button>
+                      <Slider value={[settings.storyboardRows]} onValueChange={([value]) => updateSetting('storyboardRows', value)} min={1} max={getMaxStoryboardRows()} step={1} className="flex-1" />
+                      <Button variant="outline" size="icon" onClick={() => updateSetting('storyboardRows', Math.min(getMaxStoryboardRows(), settings.storyboardRows + 1))}>+</Button>
                     </div>
                   </div>
                 </div>
