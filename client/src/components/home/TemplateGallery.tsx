@@ -49,8 +49,8 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, clas
     return (
         <div className={cn("flex flex-col gap-8 pb-4", className)}>
             {categories.map((category) => (
-                <div key={category} className="space-y-3">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pl-1">
+                <div key={category} className="space-y-4">
+                    <h3 className="text-base font-bold text-foreground uppercase tracking-wider pl-1 border-b border-border pb-2">
                         {category}
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -58,16 +58,16 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, clas
                             <Button
                                 key={item.route}
                                 variant="outline"
-                                className="h-auto flex flex-col items-center p-4 gap-3 bg-card hover:bg-accent/50 hover:border-primary/50 transition-all group text-wrap"
+                                className="h-auto flex flex-col items-center p-5 gap-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 hover:bg-primary/10 hover:border-primary transition-all group text-wrap shadow-sm hover:shadow-md"
                                 onClick={() => onSelect(item.route)}
                             >
-                                <div className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors">
+                                <div className="w-20 h-20 text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
                                     <TemplateIcon type={item.type} />
                                 </div>
-                                <div className="space-y-1 text-center">
-                                    <span className="font-medium text-sm block">{item.label}</span>
+                                <div className="space-y-1.5 text-center">
+                                    <span className="font-semibold text-base text-foreground block">{item.label}</span>
                                     {item.description && (
-                                        <span className="text-xs text-muted-foreground line-clamp-2 font-normal opacity-80">
+                                        <span className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 font-normal">
                                             {item.description}
                                         </span>
                                     )}
