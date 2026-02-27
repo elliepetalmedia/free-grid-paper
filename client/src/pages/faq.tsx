@@ -1,6 +1,7 @@
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { JsonLd } from '@/components/seo/JsonLd';
 
 interface FAQItem {
   question: string;
@@ -86,9 +87,23 @@ const faqs: FAQItem[] = [
   }
 ];
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map(faq => ({
+    "@type": "Question",
+    "name": faq.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.answer
+    }
+  }))
+};
+
 export default function FAQ() {
   return (
     <div className="min-h-screen bg-sidebar text-foreground">
+      <JsonLd data={faqSchema} />
       <header className="sticky top-0 z-10 border-b border-sidebar-border bg-sidebar/95 backdrop-blur p-4">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <Link href="/">
@@ -110,8 +125,8 @@ export default function FAQ() {
 
         <div className="space-y-4">
           {faqs.map((faq, index) => (
-            <details 
-              key={index} 
+            <details
+              key={index}
               className="group border border-sidebar-border rounded-lg bg-background/50"
               data-testid={`faq-item-${index}`}
             >
