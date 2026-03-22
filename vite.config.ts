@@ -2,10 +2,30 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
     react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'robots.txt'],
+      manifest: {
+        name: 'FreeGridPaper',
+        short_name: 'FGP',
+        description: 'Free printable grid paper generator',
+        theme_color: '#ffffff',
+      },
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }: any) => request.destination === 'document',
+            handler: 'NetworkFirst',
+            options: { cacheName: 'html-cache' },
+          },
+        ]
+      }
+    }),
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined

@@ -16,7 +16,12 @@ export function useUrlState<T extends object>(initialState: T) {
 
     // Load from URL on mount
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
+        const hashString = window.location.hash.replace(/^#/, '');
+        const hashParams = new URLSearchParams(hashString);
+        const searchParams = new URLSearchParams(window.location.search);
+        
+        // Prioritize hash (new standard) but fallback to query string for backward compat
+        const params = hashString ? hashParams : searchParams;
         const updates: Partial<T> = {};
         let hasUpdates = false;
 
@@ -55,7 +60,8 @@ export function useUrlState<T extends object>(initialState: T) {
                 }
             });
 
-            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            // Write to hash instead of query string to avoid SEO canonical issues
+            const newUrl = `${window.location.pathname}#${params.toString()}`;
             window.history.replaceState({}, '', newUrl);
 
             return newState;

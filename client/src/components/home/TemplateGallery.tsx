@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'wouter';
 import { TemplateIcon, PaperType } from './TemplateIcon';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -46,20 +47,27 @@ interface TemplateGalleryProps {
 export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, className }) => {
     const categories: GalleryItem['category'][] = ['General', 'Art & Design', 'Music', 'Specialty'];
 
+    const categoryDescriptions = {
+        'General': 'Standard grid, lined, and dot templates for everyday note-taking.',
+        'Art & Design': 'Specialized grids for 3D sketching, architectural drafting, and comic illustration.',
+        'Music': 'Blank tablature and staff paper for transcription and composition.',
+        'Specialty': 'Guides for calligraphy, Japanese manuscript, and fiber arts.'
+    };
+
     return (
-        <div className={cn("flex flex-col gap-6 pb-4", className)}>
+        <div className={cn("flex flex-col gap-8 pb-4", className)}>
             {categories.map((category) => (
-                <div key={category} className="space-y-3">
-                    <h3 className="text-sm font-bold text-primary uppercase tracking-widest">
-                        {category}
-                    </h3>
+                <div key={category} className="space-y-4">
+                    <div>
+                        <h3 className="text-sm font-bold text-primary uppercase tracking-widest">
+                            {category}
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-1">{categoryDescriptions[category]}</p>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {GALLERY_ITEMS.filter(item => item.category === category).map((item) => (
-                            <button
-                                key={item.route}
-                                className="group relative flex flex-col rounded-lg overflow-hidden border-2 border-slate-600 hover:border-primary transition-all shadow-md hover:shadow-xl hover:scale-[1.02] bg-slate-800"
-                                onClick={() => onSelect(item.route)}
-                            >
+                            <Link key={item.route} href={item.route} onClick={() => onSelect(item.route)}>
+                                <a className="group relative flex flex-col rounded-lg overflow-hidden border-2 border-slate-600 hover:border-primary transition-all shadow-md hover:shadow-xl hover:scale-[1.02] bg-slate-800 cursor-pointer text-left block">
                                 {/* Large icon area - takes up most of the card */}
                                 <div className="flex items-center justify-center p-4 h-28 bg-slate-700 group-hover:bg-slate-600 transition-colors">
                                     <div className="w-full h-full max-w-[100px] text-cyan-400 group-hover:text-cyan-300 transition-colors">
@@ -71,7 +79,8 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, clas
                                     <span className="font-semibold text-sm text-white block truncate">{item.label}</span>
                                     <span className="text-xs text-slate-400 line-clamp-1">{item.description}</span>
                                 </div>
-                            </button>
+                                </a>
+                            </Link>
                         ))}
                     </div>
                 </div>

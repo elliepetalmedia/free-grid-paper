@@ -13,6 +13,9 @@ import { SEOContent, SEO_DATA } from '@/components/layout/SEOContent';
 import { AdBanner } from '@/components/layout/AdBanner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TemplateGallery } from '@/components/home/TemplateGallery';
+import { SavedPresets } from '@/components/home/SavedPresets';
+import { PrintCalibration } from '@/components/home/PrintCalibration';
+import { trackEvent } from '@/lib/analytics';
 import { Grid } from 'lucide-react';
 
 type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy' | 'handwriting' | 'guitar-tab' | 'bass-tab' | 'genkoyoushi' | 'perspective-grid' | 'comic-layout' | 'storyboard';
@@ -124,7 +127,7 @@ const TOP_NAV_PRESETS = [
   { label: 'Storyboard', route: '/storyboard' },
 ];
 
-interface Settings {
+export interface Settings {
   paperType: PaperType;
   pageSize: PageSize;
   unit: Unit;
@@ -305,6 +308,7 @@ export default function Home() {
   }, [settings]);
 
   const copyShareLink = () => {
+    trackEvent('share_link_copied', { paper_type: settings.paperType });
     const params = new URLSearchParams();
     (Object.keys(settings) as Array<keyof Settings>).forEach(key => {
       const val = settings[key];
@@ -328,6 +332,7 @@ export default function Home() {
     if (location !== '/') {
       setLocation('/');
     }
+    trackEvent('template_selected', { paper_type: paperType });
     setSettings(prev => ({ ...prev, paperType }));
   };
 
@@ -1116,6 +1121,7 @@ export default function Home() {
 
   const downloadPDF = (paperType?: PaperType) => {
     const type = paperType || settings.paperType;
+    trackEvent('download_pdf', { paper_type: type, paper_size: settings.pageSize });
     const pageSize = getPageDimensions();
 
     let format: string | [number, number];
@@ -1206,6 +1212,7 @@ export default function Home() {
 
   const downloadBatchPDF = () => {
     if (settings.batchPaperTypes.length === 0) return;
+    trackEvent('download_batch_pdf', { count: settings.batchPaperTypes.length, paper_size: settings.pageSize });
 
     const pageSize = getPageDimensions();
 
@@ -1900,62 +1907,13 @@ export default function Home() {
     setGalleryOpen(false);
   };
 
-  // Landing page view for first-time visitors
-  if (showLanding) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-start px-4 py-8 md:py-12">
-          {/* Header */}
-          <div className="text-center mb-8 max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
-              FreeGridPaper
-            </h1>
-            <p className="text-lg md:text-xl text-foreground leading-relaxed">
-              Create and download <strong>free printable stationery</strong>: graph paper, dot grids,
-              music sheets, comic templates, and more. Customize spacing, colors, and sizes,
-              then export high-quality <strong>vector PDFs</strong> — perfect for any printer.
-            </p>
-            <p className="text-base text-muted-foreground mt-4">
-              <span className="inline-flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                <strong>100% Private</strong> — runs entirely in your browser. No uploads, no tracking.
-              </span>
-            </p>
-          </div>
-
-          {/* Gallery */}
-          <div className="w-full max-w-5xl">
-            <h2 className="text-center text-lg font-semibold text-muted-foreground mb-6">
-              Choose a Template to Get Started
-            </h2>
-            <TemplateGallery onSelect={handleGallerySelect} />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <footer className="bg-sidebar border-t border-sidebar-border py-6">
-          <div className="max-w-3xl mx-auto px-4 text-center">
-            <nav className="flex flex-wrap justify-center gap-4 mb-3 text-sm">
-              <Link href="/faq" className="text-primary hover:underline">FAQ</Link>
-              <span className="text-muted-foreground">|</span>
-              <a href="/pages/about.html" className="text-primary hover:underline">About</a>
-              <span className="text-muted-foreground">|</span>
-              <a href="/pages/contact.html" className="text-primary hover:underline">Contact</a>
-              <span className="text-muted-foreground">|</span>
-              <a href="/pages/privacy.html" className="text-primary hover:underline">Privacy</a>
-            </nav>
-            <p className="text-sm text-muted-foreground">Copyright 2025 Ellie Petal Media</p>
-          </div>
-        </footer>
-      </div>
-    );
-  }
+  // Landing page roadblock removed for UX-03
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <nav className="bg-sidebar border-b border-sidebar-border px-2 md:px-4 py-2 flex-shrink-0">
         <div className="flex items-center gap-2 md:gap-4 w-full">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex gap-2">
             <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 border-primary/20 hover:border-primary/50" data-testid="button-open-gallery">
@@ -1970,6 +1928,7 @@ export default function Home() {
                 <TemplateGallery onSelect={handleGallerySelect} />
               </DialogContent>
             </Dialog>
+            <SavedPresets currentSettings={settings} onLoadPreset={setSettings} />
           </div>
 
           <div className="w-px h-6 bg-border mx-1 hidden md:block" />
@@ -3181,7 +3140,17 @@ export default function Home() {
           </div>
         </aside>
 
-        <main className="flex-1 p-2 md:p-8 flex flex-col items-center justify-center bg-background overflow-hidden">
+        <main className="flex-1 p-2 md:p-8 flex flex-col items-center justify-center bg-background overflow-hidden relative">
+          {showLanding && (
+            <div className="w-full max-w-3xl mb-8 mt-4 text-center z-10" data-testid="hero-section">
+              <h2 className="text-3xl font-extrabold text-primary mb-3">Free Printable Grid Paper</h2>
+              <p className="text-muted-foreground mb-5 text-lg">Create, customize, and download flawless vector PDFs directly from your browser. Nothing is uploaded or tracked.</p>
+              <div className="flex gap-4 justify-center">
+                <Button size="lg" onClick={() => { sessionStorage.setItem('fgp-session-active', 'true'); setLocation('/graph'); }}>Start with Graph Paper</Button>
+                <Button size="lg" variant="outline" onClick={() => { sessionStorage.setItem('fgp-session-active', 'true'); setGalleryOpen(true); }}>Browse All Templates</Button>
+              </div>
+            </div>
+          )}
           {quickDownloadText && (
             <div className="w-full max-w-2xl mb-4 bg-primary/10 border border-primary/30 rounded-lg p-4 flex items-center justify-between gap-4" data-testid="quick-download-banner">
               <div className="flex items-center gap-3">
@@ -3241,6 +3210,8 @@ export default function Home() {
             >
               FAQ
             </Link>
+            <span className="text-muted-foreground hidden sm:inline">|</span>
+            <PrintCalibration />
             <span className="text-muted-foreground hidden sm:inline">|</span>
             <a
               href="/pages/about.html"
