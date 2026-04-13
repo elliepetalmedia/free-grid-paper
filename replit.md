@@ -139,7 +139,7 @@ Preferred communication style: Simple, everyday language.
 
 **Styling:**
 - Tailwind CSS - Utility-first CSS framework
-- PostCSS with Autoprefixer
+- @tailwindcss/vite - Tailwind CSS build integration
 - Custom theme with Blueprint Dark color palette
 
 ### Development Tools

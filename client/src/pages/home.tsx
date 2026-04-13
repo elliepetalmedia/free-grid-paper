@@ -13,7 +13,7 @@ import { AdBanner } from '@/components/layout/AdBanner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { trackEvent } from '@/lib/analytics';
 import { Grid } from 'lucide-react';
-import { getSitePageByPath, getTemplateByPaperType, getTemplateByPath, getTopNavTemplates, templates } from '@/content';
+import { getTemplateByPaperType, getTemplateByPath, getTopNavTemplates, templates } from '@/content';
 import { PAGE_SIZES } from '@/generator/page-sizes';
 import { DEFAULT_SETTINGS } from '@/generator/settings';
 import type { PageSize, PaperType, Settings, Unit } from '@/generator/types';
@@ -90,20 +90,22 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [location, setLocation] = useLocation();
 
-  // Show landing page if on root and no session activity recorded
-  const isRootPath = location === '/' || location === '';
-  const showLanding = isRootPath;
-
   useEffect(() => {
     const preset = getTemplateByPath(location);
     let baseSettings = DEFAULT_SETTINGS;
 
-    if (preset) {
+    if (!preset) {
+      const fallbackTemplate = getTemplateByPaperType(DEFAULT_SETTINGS.paperType);
+      document.title = fallbackTemplate?.title || 'FreeGridPaper - Free Printable Grid Paper Generator';
+      setPageTitle(fallbackTemplate?.title || 'FreeGridPaper');
+      setPageH1(fallbackTemplate?.h1 || 'FreeGridPaper');
+      setQuickDownloadText(null);
+      updateMetaDescription(fallbackTemplate?.description || "Free printable grid paper generator. Download custom graph paper, dot grid, lined paper, and more in PDF format.");
+    } else {
       document.title = preset.title;
       setPageTitle(preset.title);
       setPageH1(preset.h1);
       setQuickDownloadText(preset.quickDownloadText || null);
-
       updateMetaDescription(preset.description);
 
       baseSettings = {
@@ -111,25 +113,6 @@ export default function Home() {
         ...preset.settings,
         useCustomBackground: preset.settings.useCustomBackground || Boolean(preset.settings.backgroundColor),
       };
-    } else {
-      const homePage = getSitePageByPath('/');
-      document.title = homePage?.title || 'FreeGridPaper - Free Printable Grid Paper Generator';
-      setPageTitle(homePage?.title || 'FreeGridPaper');
-      setPageH1(homePage?.h1 || 'FreeGridPaper');
-      setQuickDownloadText(null);
-
-      const saved = localStorage.getItem('freegridpaper-settings');
-      let savedType = DEFAULT_SETTINGS.paperType;
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          baseSettings = { ...DEFAULT_SETTINGS, ...parsed };
-          savedType = parsed.paperType || DEFAULT_SETTINGS.paperType;
-        } catch (e) { }
-      }
-
-      const savedTemplate = getTemplateByPaperType(savedType);
-      updateMetaDescription(savedTemplate?.description || homePage?.description || "Free printable grid paper generator. Download custom graph paper, dot grid, lined paper, and more in PDF format.");
     }
 
     // Apply URL overrides on top of base settings
@@ -159,15 +142,13 @@ export default function Home() {
   };
 
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
-    if (getTemplateByPath(location)) {
-      setLocation('/');
-    }
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const handlePaperTypeChange = (paperType: PaperType) => {
-    if (location !== '/') {
-      setLocation('/');
+    const template = getTemplateByPaperType(paperType);
+    if (template && location !== template.path) {
+      setLocation(template.path);
     }
     trackEvent('template_selected', { paper_type: paperType });
     setSettings(prev => ({ ...prev, paperType }));
@@ -1044,12 +1025,9 @@ export default function Home() {
   const dismissQuickDownload = () => setQuickDownloadText(null);
 
   const handleGallerySelect = (route: string) => {
-    sessionStorage.setItem('fgp-session-active', 'true');
     setLocation(route);
     setGalleryOpen(false);
   };
-
-  // Landing page roadblock removed for UX-03
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -2293,25 +2271,6 @@ export default function Home() {
         </aside>
 
         <main className="flex-1 p-2 md:p-8 flex flex-col items-center justify-center bg-background overflow-hidden relative">
-          {showLanding && (
-            <div className="w-full max-w-3xl mb-8 mt-4 text-center z-10" data-testid="hero-section">
-              <h2 className="text-3xl font-extrabold text-primary mb-3">Free Printable Grid Paper</h2>
-              <p className="text-muted-foreground mb-5 text-lg">Create, customize, and download crisp vector PDFs directly from your browser.</p>
-              <div className="flex gap-4 justify-center flex-wrap">
-                <Button size="lg" onClick={() => { sessionStorage.setItem('fgp-session-active', 'true'); setLocation('/graph'); }}>Start with Graph Paper</Button>
-                <Button size="lg" variant="outline" onClick={() => { sessionStorage.setItem('fgp-session-active', 'true'); setGalleryOpen(true); }}>Browse All Templates</Button>
-                <Link href="/templates">
-                  <Button size="lg" variant="outline">Template Library</Button>
-                </Link>
-              </div>
-              <div className="mt-5 flex flex-wrap justify-center gap-3 text-sm">
-                <Link href="/category/graph-and-grid-paper" className="text-primary hover:underline">Graph and grid paper</Link>
-                <Link href="/category/writing-and-handwriting-paper" className="text-primary hover:underline">Writing paper</Link>
-                <Link href="/category/music-paper" className="text-primary hover:underline">Music paper</Link>
-                <Link href="/category/gaming-and-hex-grids" className="text-primary hover:underline">Hex grids</Link>
-              </div>
-            </div>
-          )}
           {quickDownloadText && (
             <div className="w-full max-w-2xl mb-4 bg-primary/10 border border-primary/30 rounded-lg p-4 flex items-center justify-between gap-4" data-testid="quick-download-banner">
               <div className="flex items-center gap-3">

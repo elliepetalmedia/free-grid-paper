@@ -36,7 +36,6 @@ const files = [
   'tsconfig.json',
   'vite.config.ts',
   'tailwind.config.ts',
-  'postcss.config.js',
   'components.json',
   'drizzle.config.ts',
   'netlify.toml',

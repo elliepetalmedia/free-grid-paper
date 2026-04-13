@@ -66,8 +66,7 @@ freegridpaper-netlify-deploy/
 ├── vite.config.ts         # Frontend build configuration
 ├── netlify.toml           # Netlify deployment configuration
 ├── tsconfig.json          # TypeScript configuration
-├── tailwind.config.ts     # Tailwind CSS configuration
-└── postcss.config.js      # PostCSS configuration
+└── tailwind.config.ts     # Tailwind CSS configuration
 ```
 
 ## Build Process
