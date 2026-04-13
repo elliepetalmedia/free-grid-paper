@@ -1,8 +1,5 @@
 import type { PresetEntry, TemplateSettings } from './types';
 
-const previewImage = '/previews/freegridpaper-preview.svg';
-const socialImage = '/og/freegridpaper-og.svg';
-
 const preset = (
   id: string,
   label: string,
@@ -28,8 +25,8 @@ const preset = (
   description,
   h1,
   summary,
-  previewImage,
-  socialImage,
+  previewImage: `/previews/presets/${id}.svg`,
+  socialImage: `/og/${id}.svg`,
   useCases: ['Fast printing with proven settings', 'Classroom and home use', 'Reusable stationery downloads'],
   printTips: ['Print at Actual Size or 100% scale.', 'Disable Fit to Page when exact measurements matter.'],
   relatedPresetIds: [],

@@ -3,7 +3,7 @@ import type { TemplateEntry } from './types';
 const previewImage = '/previews/freegridpaper-preview.svg';
 const socialImage = '/og/freegridpaper-og.svg';
 
-export const templates: TemplateEntry[] = [
+export const templates: TemplateEntry[] = ([
   {
     kind: 'template',
     id: 'graph-paper',
@@ -484,4 +484,8 @@ export const templates: TemplateEntry[] = [
       { heading: 'Print tip', body: 'Use wider spacing when list items need extra notes or descriptions.' },
     ],
   },
-];
+] as TemplateEntry[]).map((entry) => ({
+  ...entry,
+  previewImage: `/previews/templates/${entry.id}.svg`,
+  socialImage: `/og/${entry.id}.svg`,
+}));

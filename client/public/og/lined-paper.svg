@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Lined Paper preview">
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <rect x="70" y="70" width="410" height="490" rx="8" fill="#ffffff"/>
+  <g transform="translate(70 70)"><g><path d="M40 44.5H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 89.1H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 133.6H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 178.2H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 222.7H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 267.3H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 311.8H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 356.4H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 400.9H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M40 445.5H370.0" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/><path d="M110 30V460" stroke="#ef4444" stroke-opacity="0.55" stroke-width="3"/></g></g>
+  <rect x="70" y="70" width="410" height="490" rx="8" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+  <text x="540" y="230" fill="#f8fafc" font-family="Arial, sans-serif" font-size="62" font-weight="800">Lined Paper</text>
+  <text x="540" y="285" fill="#bae6fd" font-family="Arial, sans-serif" font-size="30">Classic ruled paper for notes, schoolwork, journals, lists, and handwriting.</text>
+  <text x="540" y="341" fill="#e2e8f0" font-family="Arial, sans-serif" font-size="25">Free printable vector PDF</text>
+</svg>

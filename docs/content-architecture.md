@@ -60,3 +60,7 @@ Do not add preset pages that only change a setting value. Each preset page needs
 ## Prerender And Sitemap
 
 `scripts/prerender.ts` reads `indexableEntries` from the registry. Pages with `indexable: true` are included in prerender output and `sitemap.xml`. Query-string share URLs are not canonical and are blocked by `robots.txt`.
+
+## Out Of Scope
+
+Analytics expansion and Search Console workflows are intentionally outside this repository remediation. They can be handled as a separate operational workstream.
