@@ -11,7 +11,7 @@ export default function TemplatesPage() {
 
   return (
     <PageLayout>
-      <Breadcrumbs items={[{ label: 'Home', path: '/' }, { label: 'Templates', path: '/templates' }]} />
+      <Breadcrumbs items={[{ label: 'Templates', path: '/templates' }]} />
       <section className="max-w-3xl">
         <h1 className="text-4xl font-bold text-primary">{page.h1}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{page.summary}</p>

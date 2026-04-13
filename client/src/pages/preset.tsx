@@ -31,7 +31,6 @@ export default function PresetPage({ params }: PresetPageProps) {
     <PageLayout>
       <Breadcrumbs
         items={[
-          { label: 'Home', path: '/' },
           { label: 'Templates', path: '/templates' },
           ...(category ? [{ label: category.h1, path: category.path }] : []),
           ...(template ? [{ label: template.label, path: template.path }] : []),

@@ -19,7 +19,7 @@ export default function GuidePage({ params }: GuidePageProps) {
 
   return (
     <PageLayout>
-      <Breadcrumbs items={[{ label: 'Home', path: '/' }, { label: 'Guides', path: '/templates' }, { label: guide.h1, path: guide.path }]} />
+      <Breadcrumbs items={[{ label: 'Templates', path: '/templates' }, { label: guide.h1, path: guide.path }]} />
       <article className="max-w-3xl">
         <h1 className="text-4xl font-bold text-primary">{guide.h1}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{guide.summary}</p>

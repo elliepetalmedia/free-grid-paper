@@ -107,10 +107,10 @@ export default function FAQ() {
       <JsonLd data={faqSchema} />
       <header className="sticky top-0 z-10 border-b border-sidebar-border bg-sidebar/95 backdrop-blur p-4">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <Link href="/">
+          <Link href="/templates">
             <Button variant="outline" size="sm" data-testid="button-back-home">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Generator
+              Back to Templates
             </Button>
           </Link>
         </div>

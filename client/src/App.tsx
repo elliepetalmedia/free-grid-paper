@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,6 +14,16 @@ import GuidePage from "@/pages/guide";
 import SitePage from "@/pages/site-page";
 import { templates } from "@/content";
 
+function RootRedirect() {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    navigate("/templates", { replace: true });
+  }, [navigate]);
+
+  return null;
+}
+
 function Router() {
   const templateRoutes = templates.map((template) => (
     <Route key={template.path} path={template.path} component={Home} />
@@ -20,7 +31,7 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={RootRedirect} />
       {templateRoutes}
       <Route path="/templates" component={TemplatesPage} />
       <Route path="/category/:slug" component={CategoryPage} />

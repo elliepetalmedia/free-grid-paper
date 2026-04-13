@@ -20,7 +20,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
   return (
     <PageLayout>
-      <Breadcrumbs items={[{ label: 'Home', path: '/' }, { label: 'Templates', path: '/templates' }, { label: category.h1, path: category.path }]} />
+      <Breadcrumbs items={[{ label: 'Templates', path: '/templates' }, { label: category.h1, path: category.path }]} />
       <section className="grid gap-8 lg:grid-cols-[1fr_320px]">
         <div>
           <h1 className="text-4xl font-bold text-primary">{category.h1}</h1>

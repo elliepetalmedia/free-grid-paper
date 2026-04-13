@@ -35,27 +35,23 @@ function imageUrl(pathname: string) {
 }
 
 function breadcrumbsFor(entry: IndexableEntry) {
-  const crumbs = [{ name: "Home", item: absoluteUrl("/") }];
+  const crumbs = [{ name: "Templates", item: absoluteUrl("/templates") }];
 
-  if (entry.path === "/") return crumbs;
+  if (entry.path === "/" || entry.path === "/templates") return crumbs;
 
   if (entry.kind === "template") {
     const category = getCategoryById(entry.categoryId);
-    crumbs.push({ name: "Templates", item: absoluteUrl("/templates") });
     if (category) crumbs.push({ name: category.h1, item: absoluteUrl(category.path) });
     crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
   } else if (entry.kind === "category") {
-    crumbs.push({ name: "Templates", item: absoluteUrl("/templates") });
     crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
   } else if (entry.kind === "preset") {
     const category = getCategoryById(entry.categoryId);
     const template = getTemplateById(entry.templateId);
-    crumbs.push({ name: "Templates", item: absoluteUrl("/templates") });
     if (category) crumbs.push({ name: category.h1, item: absoluteUrl(category.path) });
     if (template) crumbs.push({ name: template.label, item: absoluteUrl(template.path) });
     crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
   } else if (entry.kind === "guide") {
-    crumbs.push({ name: "Guides", item: absoluteUrl("/templates") });
     crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
   } else {
     crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
