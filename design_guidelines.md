@@ -73,9 +73,9 @@ Use Tailwind-style spacing: p-4, p-6, p-8 for consistent rhythm throughout the i
 - Copyright notice: "Copyright 2025 Ellie Petal Media"
 - Padding: 2rem vertical
 
-## Paper Generation Tools (5 Types)
+## Paper Generation Tools
 
-Each tool should have clearly labeled, grouped controls:
+Each tool should have clearly labeled, grouped controls. Keep the exact template list in the typed content registry so design documentation does not drift from the app:
 
 1. **Dot Grid:** Spacing slider (5-30mm), Size slider (1-3px), Opacity slider
 2. **Graph Paper:** Grid size input (mm), Line weight slider, Color dropdown (Cyan/Gray/Black)

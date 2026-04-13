@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="FreeGridPaper social preview">
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <rect x="70" y="70" width="410" height="490" rx="8" fill="#ffffff"/>
+  <g stroke="#38bdf8" stroke-opacity="0.5" stroke-width="2">
+    <path d="M120 130H430M120 180H430M120 230H430M120 280H430M120 330H430M120 380H430M120 430H430M120 480H430"/>
+    <path d="M170 110V520M220 110V520M270 110V520M320 110V520M370 110V520"/>
+  </g>
+  <text x="540" y="230" fill="#f8fafc" font-family="Arial, sans-serif" font-size="78" font-weight="800">FreeGridPaper</text>
+  <text x="540" y="305" fill="#bae6fd" font-family="Arial, sans-serif" font-size="34">Printable paper generator</text>
+  <text x="540" y="370" fill="#e2e8f0" font-family="Arial, sans-serif" font-size="28">Graph paper, dot grids, music paper,</text>
+  <text x="540" y="410" fill="#e2e8f0" font-family="Arial, sans-serif" font-size="28">hex maps, writing guides, and more.</text>
+</svg>

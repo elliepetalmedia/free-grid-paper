@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -9,18 +9,19 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Download, Info, X, Share2, Check } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import { SEOContent, SEO_DATA } from '@/components/layout/SEOContent';
+import { SEOContent } from '@/components/layout/SEOContent';
 import { AdBanner } from '@/components/layout/AdBanner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { TemplateGallery } from '@/components/home/TemplateGallery';
-import { SavedPresets } from '@/components/home/SavedPresets';
-import { PrintCalibration } from '@/components/home/PrintCalibration';
 import { trackEvent } from '@/lib/analytics';
 import { Grid } from 'lucide-react';
+import { getSitePageByPath, getTemplateByPaperType, getTemplateByPath, getTopNavTemplates, templates } from '@/content';
+import { PAGE_SIZES } from '@/generator/page-sizes';
+import { DEFAULT_SETTINGS } from '@/generator/settings';
+import type { PageSize, PaperType, Settings, Unit } from '@/generator/types';
 
-type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy' | 'handwriting' | 'guitar-tab' | 'bass-tab' | 'genkoyoushi' | 'perspective-grid' | 'comic-layout' | 'storyboard';
-type PageSize = 'A4' | 'Letter' | 'Legal' | 'A0' | 'A1' | 'A2' | 'ArchC' | 'ArchD' | 'ArchE';
-type Unit = 'mm' | 'inches';
+const TemplateGallery = lazy(() => import('@/components/home/TemplateGallery').then((module) => ({ default: module.TemplateGallery })));
+const SavedPresets = lazy(() => import('@/components/home/SavedPresets').then((module) => ({ default: module.SavedPresets })));
+const PrintCalibration = lazy(() => import('@/components/home/PrintCalibration').then((module) => ({ default: module.PrintCalibration })));
 
 // Helper to safely parse URL params
 const parseUrlParams = (defaults: Settings) => {
@@ -59,173 +60,15 @@ const hexToRgb = (hex: string) => {
   ] : [0, 0, 0];
 };
 
-const PAGE_SIZES: Record<PageSize, { width: number; height: number; label: string }> = {
-  'A4': { width: 210, height: 297, label: 'A4 (210×297mm)' },
-  'Letter': { width: 215.9, height: 279.4, label: 'Letter (8.5×11in)' },
-  'Legal': { width: 215.9, height: 355.6, label: 'Legal (8.5×14in)' },
-  'A2': { width: 420, height: 594, label: 'A2 (420×594mm)' },
-  'A1': { width: 594, height: 841, label: 'A1 (594×841mm)' },
-  'A0': { width: 841, height: 1189, label: 'A0 (841×1189mm)' },
-  'ArchC': { width: 457.2, height: 609.6, label: 'Arch C (18×24in)' },
-  'ArchD': { width: 609.6, height: 914.4, label: 'Arch D (24×36in)' },
-  'ArchE': { width: 914.4, height: 1219.2, label: 'Arch E (36×48in)' },
-};
+const TOP_NAV_PRESETS = getTopNavTemplates().map((template) => ({
+  label: template.label,
+  route: template.path,
+}));
 
-interface RoutePreset {
-  paperType: PaperType;
-  pageSize?: PageSize;
-  lineHeight?: number;
-  genkoyoushiSize?: number;
-  perspectiveType?: '1-point' | '2-point';
-  comicLayout?: '2x3' | '3x3' | 'splash';
-  storyboardCols?: number;
-  storyboardRows?: number;
-  hexSize?: number;
-  title: string;
-  h1: string;
-  quickDownloadText?: string;
-  useCustomColor?: boolean;
-  customColor?: string;
-  backgroundColor?: string;
-}
-
-const ROUTE_PRESETS: Record<string, RoutePreset> = {
-  '/hex-paper': { paperType: 'hex-grid', pageSize: 'Letter', hexSize: 25.4, title: 'Free Printable Hex Grid Paper | FreeGridPaper', h1: 'Hex Grid Paper', quickDownloadText: 'Hex Grid (Letter, 1")' },
-  '/music-staff': { paperType: 'music-staff', pageSize: 'A4', title: 'Blank Sheet Music PDF | FreeGridPaper', h1: 'Blank Sheet Music', quickDownloadText: 'Blank Sheet Music (A4)' },
-  '/engineering': { paperType: 'graph-paper', title: 'Engineering Graph Paper | FreeGridPaper', h1: 'Engineering Graph Paper', quickDownloadText: 'Engineering Paper', useCustomColor: true, customColor: '#228B22', backgroundColor: '#FFFFC5' },
-  '/poster-size': { paperType: 'graph-paper', pageSize: 'ArchD', title: 'Poster Size Grid Paper | FreeGridPaper', h1: 'Poster Size Graph', quickDownloadText: 'Poster Graph (24×36")' },
-  '/poster-hex': { paperType: 'hex-grid', pageSize: 'ArchD', hexSize: 25.4, title: 'Poster Size Hex Grid for D&D | FreeGridPaper', h1: 'Poster Size Hex (D&D)', quickDownloadText: 'Poster Hex Grid (24×36", 1")' },
-  '/calligraphy': { paperType: 'calligraphy', title: 'Calligraphy Practice Paper | FreeGridPaper', h1: 'Calligraphy Practice Paper', quickDownloadText: 'Calligraphy Paper' },
-  '/knitting': { paperType: 'knitting', title: 'Knitting & Cross-Stitch Graph Paper | FreeGridPaper', h1: 'Knitting Graph Paper', quickDownloadText: 'Knitting Graph' },
-  '/graph': { paperType: 'graph-paper', pageSize: 'Letter', title: 'Standard Graph Paper | FreeGridPaper', h1: 'Standard Graph Paper', quickDownloadText: 'Graph Paper (Letter)' },
-  '/dot-grid': { paperType: 'dot-grid', pageSize: 'A4', title: 'Dot Grid Paper | FreeGridPaper', h1: 'Dot Grid Paper', quickDownloadText: 'Dot Grid (A4)' },
-  '/handwriting': { paperType: 'handwriting', pageSize: 'Letter', title: 'Handwriting Practice Paper | FreeGridPaper', h1: 'Handwriting Practice Paper', quickDownloadText: 'Handwriting Paper (Letter)', lineHeight: 15 },
-  '/guitar-tab': { paperType: 'guitar-tab', pageSize: 'Letter', title: 'Guitar Tablature PDF | FreeGridPaper', h1: 'Guitar Tablature', quickDownloadText: 'Guitar Tab (Letter)' },
-  '/bass-tab': { paperType: 'bass-tab', pageSize: 'Letter', title: 'Bass Tablature PDF | FreeGridPaper', h1: 'Bass Tablature', quickDownloadText: 'Bass Tab (Letter)' },
-  '/genkoyoushi': { paperType: 'genkoyoushi', pageSize: 'A4', title: 'Genkoyoushi Japanese Manuscript Paper | FreeGridPaper', h1: 'Genkoyoushi Paper', quickDownloadText: 'Genkoyoushi (A4)', genkoyoushiSize: 10 },
-  '/perspective-1': { paperType: 'perspective-grid', title: '1-Point Perspective Grid | FreeGridPaper', h1: '1-Point Perspective', quickDownloadText: '1-Point Perspective', perspectiveType: '1-point' },
-  '/perspective-2': { paperType: 'perspective-grid', title: '2-Point Perspective Grid | FreeGridPaper', h1: '2-Point Perspective', quickDownloadText: '2-Point Perspective', perspectiveType: '2-point' },
-  '/comic-2x3': { paperType: 'comic-layout', title: 'Comic Book Template (2x3) | FreeGridPaper', h1: 'Comic Layout (2x3)', quickDownloadText: 'Comic 2x3', comicLayout: '2x3' },
-  '/storyboard': { paperType: 'storyboard', title: 'Storyboard Template | FreeGridPaper', h1: 'Storyboard Template', quickDownloadText: 'Storyboard (3x2)', storyboardCols: 3, storyboardRows: 2 },
-  '/isometric-dots': { paperType: 'isometric-dots', pageSize: 'A4', title: 'Isometric Dot Grid Paper | FreeGridPaper', h1: 'Isometric Dot Grid', quickDownloadText: 'Isometric Dots (A4)' },
-  '/lined-paper': { paperType: 'lined-paper', pageSize: 'Letter', title: 'Lined Paper PDF | FreeGridPaper', h1: 'Lined Paper', quickDownloadText: 'Lined Paper (Letter)' },
-  '/checklist': { paperType: 'checklist', pageSize: 'Letter', title: 'Printable Checklist Paper | FreeGridPaper', h1: 'Checklist Paper', quickDownloadText: 'Checklist (Letter)' },
-};
-
-const TOP_NAV_PRESETS = [
-  { label: 'Graph Paper', route: '/graph' },
-  { label: 'Dot Grid', route: '/dot-grid' },
-  { label: 'Hexagon (D&D)', route: '/hex-paper' },
-  { label: 'Music Staff', route: '/music-staff' },
-  { label: 'Engineering', route: '/engineering' },
-  { label: 'Poster Size', route: '/poster-size' },
-  { label: 'Poster Hex (D&D)', route: '/poster-hex' },
-  { label: 'Handwriting', route: '/handwriting' },
-  { label: 'Guitar Tab', route: '/guitar-tab' },
-  { label: 'Genkoyoushi', route: '/genkoyoushi' },
-  { label: 'Perspective', route: '/perspective-1' },
-  { label: 'Storyboard', route: '/storyboard' },
-];
-
-export interface Settings {
-  paperType: PaperType;
-  pageSize: PageSize;
-  unit: Unit;
-  dotSpacing: number;
-  dotSize: number;
-  dotOpacity: number;
-  gridSize: number;
-  lineWeight: number;
-  gridColor: 'cyan' | 'gray' | 'black';
-  useCustomColor: boolean;
-  customColor: string;
-  lineHeight: number;
-  showMargin: boolean;
-  stavesPerPage: number;
-  batchPaperTypes: PaperType[];
-  hexSize: number;
-  stitchWidth: number;
-  stitchHeight: number;
-  calligraphyAngle: number;
-  showHandwritingSlant: boolean;
-  genkoyoushiSize: number;
-  showRulers: boolean;
-  backgroundColor: string;
-  useCustomBackground: boolean;
-  perspectiveType: '1-point' | '2-point';
-  comicLayout: '2x3' | '3x3' | 'splash';
-  storyboardCols: number;
-  storyboardRows: number;
-}
-
-const DEFAULT_SETTINGS: Settings = {
-  paperType: 'dot-grid',
-  pageSize: 'A4',
-  unit: 'mm',
-  dotSpacing: 5,
-  dotSize: 2,
-  dotOpacity: 0.5,
-  gridSize: 5,
-  lineWeight: 0.5,
-  gridColor: 'gray',
-  useCustomColor: false,
-  customColor: '#000000',
-  lineHeight: 7.1,
-  showMargin: true,
-  stavesPerPage: 10,
-  batchPaperTypes: [],
-  hexSize: 25.4,
-  stitchWidth: 5,
-  stitchHeight: 7.5,
-  calligraphyAngle: 55,
-  showHandwritingSlant: false,
-  genkoyoushiSize: 10,
-  showRulers: false,
-  backgroundColor: '#ffffff',
-  useCustomBackground: false,
-  perspectiveType: '1-point',
-  comicLayout: '2x3',
-  storyboardCols: 3,
-  storyboardRows: 2,
-};
-
-const PAPER_TYPE_LABELS: Record<PaperType, string> = {
-  'dot-grid': 'Dot Grid',
-  'isometric-dots': 'Isometric Dots',
-  'graph-paper': 'Graph Paper',
-  'lined-paper': 'Lined Paper',
-  'music-staff': 'Music Staff',
-  'checklist': 'Checklist',
-  'hex-grid': 'Hexagon Grid',
-  'knitting': 'Knitting/Cross-Stitch',
-  'calligraphy': 'Calligraphy',
-  'handwriting': 'Handwriting Practice',
-  'guitar-tab': 'Guitar Tab',
-  'bass-tab': 'Bass Tab',
-  'genkoyoushi': 'Genkoyoushi (Japanese)',
-  'perspective-grid': 'Perspective Grid',
-  'comic-layout': 'Comic Book Layout',
-  'storyboard': 'Storyboard Template',
-};
-
-const PAPER_TYPE_TO_ROUTE: Partial<Record<PaperType, string>> = {
-  'hex-grid': '/hex-paper',
-  'music-staff': '/music-staff',
-  'calligraphy': '/calligraphy',
-  'knitting': '/knitting',
-  'graph-paper': '/graph',
-  'dot-grid': '/dot-grid',
-  'handwriting': '/handwriting',
-  'guitar-tab': '/guitar-tab',
-  'bass-tab': '/bass-tab',
-  'genkoyoushi': '/genkoyoushi',
-  'perspective-grid': '/perspective-1',
-  'comic-layout': '/comic-2x3',
-  'storyboard': '/storyboard',
-  'isometric-dots': '/isometric-dots',
-  'lined-paper': '/lined-paper',
-  'checklist': '/checklist',
-};
+const PAPER_TYPE_LABELS = templates.reduce((labels, template) => {
+  labels[template.settings.paperType as PaperType] ??= template.label;
+  return labels;
+}, {} as Record<PaperType, string>);
 
 const updateMetaDescription = (content: string) => {
   let meta = document.querySelector('meta[name="description"]');
@@ -249,11 +92,10 @@ export default function Home() {
 
   // Show landing page if on root and no session activity recorded
   const isRootPath = location === '/' || location === '';
-  const hasSessionActivity = typeof window !== 'undefined' && sessionStorage.getItem('fgp-session-active') === 'true';
-  const showLanding = isRootPath && !hasSessionActivity;
+  const showLanding = isRootPath;
 
   useEffect(() => {
-    const preset = ROUTE_PRESETS[location];
+    const preset = getTemplateByPath(location);
     let baseSettings = DEFAULT_SETTINGS;
 
     if (preset) {
@@ -262,23 +104,18 @@ export default function Home() {
       setPageH1(preset.h1);
       setQuickDownloadText(preset.quickDownloadText || null);
 
-      const desc = SEO_DATA[preset.paperType]?.description || "Free printable grid paper generator.";
-      updateMetaDescription(desc);
+      updateMetaDescription(preset.description);
 
       baseSettings = {
         ...DEFAULT_SETTINGS,
-        paperType: preset.paperType,
-        pageSize: preset.pageSize || DEFAULT_SETTINGS.pageSize,
-        hexSize: preset.hexSize || DEFAULT_SETTINGS.hexSize,
-        useCustomColor: preset.useCustomColor || false,
-        customColor: preset.customColor || DEFAULT_SETTINGS.customColor,
-        backgroundColor: preset.backgroundColor || DEFAULT_SETTINGS.backgroundColor,
-        useCustomBackground: preset.backgroundColor ? true : false,
+        ...preset.settings,
+        useCustomBackground: preset.settings.useCustomBackground || Boolean(preset.settings.backgroundColor),
       };
     } else {
-      document.title = 'FreeGridPaper - Free Printable Grid Paper Generator';
-      setPageTitle('FreeGridPaper');
-      setPageH1('FreeGridPaper');
+      const homePage = getSitePageByPath('/');
+      document.title = homePage?.title || 'FreeGridPaper - Free Printable Grid Paper Generator';
+      setPageTitle(homePage?.title || 'FreeGridPaper');
+      setPageH1(homePage?.h1 || 'FreeGridPaper');
       setQuickDownloadText(null);
 
       const saved = localStorage.getItem('freegridpaper-settings');
@@ -291,8 +128,8 @@ export default function Home() {
         } catch (e) { }
       }
 
-      const desc = SEO_DATA[savedType]?.description || "Free printable grid paper generator. Download custom graph paper, dot grid, lined paper, and more in PDF format.";
-      updateMetaDescription(desc);
+      const savedTemplate = getTemplateByPaperType(savedType);
+      updateMetaDescription(savedTemplate?.description || homePage?.description || "Free printable grid paper generator. Download custom graph paper, dot grid, lined paper, and more in PDF format.");
     }
 
     // Apply URL overrides on top of base settings
@@ -322,7 +159,7 @@ export default function Home() {
   };
 
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
-    if (ROUTE_PRESETS[location]) {
+    if (getTemplateByPath(location)) {
       setLocation('/');
     }
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -1914,6 +1751,11 @@ export default function Home() {
       <nav className="bg-sidebar border-b border-sidebar-border px-2 md:px-4 py-2 flex-shrink-0">
         <div className="flex items-center gap-2 md:gap-4 w-full">
           <div className="flex-shrink-0 flex gap-2">
+            <Link href="/templates">
+              <Button variant="outline" size="sm" className="gap-2 border-primary/20 hover:border-primary/50" data-testid="link-templates-nav">
+                Templates
+              </Button>
+            </Link>
             <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 border-primary/20 hover:border-primary/50" data-testid="button-open-gallery">
@@ -1925,10 +1767,14 @@ export default function Home() {
                 <DialogHeader>
                   <DialogTitle>Stationery Template Gallery</DialogTitle>
                 </DialogHeader>
-                <TemplateGallery onSelect={handleGallerySelect} />
+                <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading templates...</div>}>
+                  <TemplateGallery onSelect={handleGallerySelect} />
+                </Suspense>
               </DialogContent>
             </Dialog>
-            <SavedPresets currentSettings={settings} onLoadPreset={setSettings} />
+            <Suspense fallback={null}>
+              <SavedPresets currentSettings={settings} onLoadPreset={setSettings} />
+            </Suspense>
           </div>
 
           <div className="w-px h-6 bg-border mx-1 hidden md:block" />
@@ -3144,10 +2990,19 @@ export default function Home() {
           {showLanding && (
             <div className="w-full max-w-3xl mb-8 mt-4 text-center z-10" data-testid="hero-section">
               <h2 className="text-3xl font-extrabold text-primary mb-3">Free Printable Grid Paper</h2>
-              <p className="text-muted-foreground mb-5 text-lg">Create, customize, and download flawless vector PDFs directly from your browser. Nothing is uploaded or tracked.</p>
-              <div className="flex gap-4 justify-center">
+              <p className="text-muted-foreground mb-5 text-lg">Create, customize, and download crisp vector PDFs directly from your browser.</p>
+              <div className="flex gap-4 justify-center flex-wrap">
                 <Button size="lg" onClick={() => { sessionStorage.setItem('fgp-session-active', 'true'); setLocation('/graph'); }}>Start with Graph Paper</Button>
                 <Button size="lg" variant="outline" onClick={() => { sessionStorage.setItem('fgp-session-active', 'true'); setGalleryOpen(true); }}>Browse All Templates</Button>
+                <Link href="/templates">
+                  <Button size="lg" variant="outline">Template Library</Button>
+                </Link>
+              </div>
+              <div className="mt-5 flex flex-wrap justify-center gap-3 text-sm">
+                <Link href="/category/graph-and-grid-paper" className="text-primary hover:underline">Graph and grid paper</Link>
+                <Link href="/category/writing-and-handwriting-paper" className="text-primary hover:underline">Writing paper</Link>
+                <Link href="/category/music-paper" className="text-primary hover:underline">Music paper</Link>
+                <Link href="/category/gaming-and-hex-grids" className="text-primary hover:underline">Hex grids</Link>
               </div>
             </div>
           )}
@@ -3204,6 +3059,14 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-4 md:px-6">
           <nav className="flex flex-col sm:flex-row flex-wrap justify-center gap-2 sm:gap-4 mb-4">
             <Link
+              href="/templates"
+              className="text-primary hover:underline text-center"
+              data-testid="link-templates"
+            >
+              Templates
+            </Link>
+            <span className="text-muted-foreground hidden sm:inline">|</span>
+            <Link
               href="/faq"
               className="text-primary hover:underline text-center"
               data-testid="link-faq"
@@ -3211,10 +3074,12 @@ export default function Home() {
               FAQ
             </Link>
             <span className="text-muted-foreground hidden sm:inline">|</span>
-            <PrintCalibration />
+            <Suspense fallback={null}>
+              <PrintCalibration />
+            </Suspense>
             <span className="text-muted-foreground hidden sm:inline">|</span>
             <a
-              href="/pages/about.html"
+              href="/about"
               className="text-primary hover:underline text-center"
               data-testid="link-about"
             >
@@ -3222,7 +3087,7 @@ export default function Home() {
             </a>
             <span className="text-muted-foreground hidden sm:inline">|</span>
             <a
-              href="/pages/contact.html"
+              href="/contact"
               className="text-primary hover:underline text-center"
               data-testid="link-contact"
             >
@@ -3230,7 +3095,7 @@ export default function Home() {
             </a>
             <span className="text-muted-foreground hidden sm:inline">|</span>
             <a
-              href="/pages/privacy.html"
+              href="/privacy"
               className="text-primary hover:underline text-center"
               data-testid="link-privacy"
             >

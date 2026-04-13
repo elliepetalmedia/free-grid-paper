@@ -18,7 +18,7 @@ The navigation bar provides instant access to pre-configured paper types with op
 
 Click any Quick Download button to load the preset and see a "Ready to Print" banner. Any customization automatically switches to the full generator mode.
 
-### 9 Paper Types
+### Printable Paper Templates
 - **Dot Grid** - For bullet journaling and note-taking
 - **Isometric Dots** - For 3D sketching and technical drawing
 - **Graph Paper** - Square grid for math and charts
@@ -28,6 +28,10 @@ Click any Quick Download button to load the preset and see a "Ready to Print" ba
 - **Checklist** - Lined paper with checkboxes
 - **Knitting/Cross-Stitch** - Rectangular grid matching gauge ratios
 - **Calligraphy** - Horizontal lines with angled guides
+- **Handwriting Practice** - Guided lines for early writing
+- **Guitar and Bass Tab** - Blank tablature sheets
+- **Genkoyoushi** - Japanese manuscript paper
+- **Perspective, Comic, and Storyboard Layouts** - Drawing and planning templates
 
 ### Paper Sizes
 - **Standard:** A4, US Letter, Legal

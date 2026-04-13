@@ -3,7 +3,7 @@ import { Bookmark, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Settings } from '@/pages/home';
+import type { Settings } from '@/generator/types';
 
 interface SavedPresetsProps {
   currentSettings: Settings;

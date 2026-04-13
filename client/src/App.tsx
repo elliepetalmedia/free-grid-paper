@@ -6,32 +6,30 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
 import FAQ from "@/pages/faq";
 import NotFound from "@/pages/not-found";
+import TemplatesPage from "@/pages/templates";
+import CategoryPage from "@/pages/category";
+import PresetPage from "@/pages/preset";
+import GuidePage from "@/pages/guide";
+import SitePage from "@/pages/site-page";
+import { templates } from "@/content";
 
 function Router() {
+  const templateRoutes = templates.map((template) => (
+    <Route key={template.path} path={template.path} component={Home} />
+  ));
+
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/hex-paper" component={Home} />
-      <Route path="/music-staff" component={Home} />
-      <Route path="/engineering" component={Home} />
-      <Route path="/poster-size" component={Home} />
-      <Route path="/poster-hex" component={Home} />
-      <Route path="/calligraphy" component={Home} />
-      <Route path="/knitting" component={Home} />
-      <Route path="/graph" component={Home} />
-      <Route path="/dot-grid" component={Home} />
-      <Route path="/handwriting" component={Home} />
-      <Route path="/guitar-tab" component={Home} />
-      <Route path="/bass-tab" component={Home} />
-      <Route path="/genkoyoushi" component={Home} />
-      <Route path="/perspective-1" component={Home} />
-      <Route path="/perspective-2" component={Home} />
-      <Route path="/comic-2x3" component={Home} />
-      <Route path="/storyboard" component={Home} />
-      <Route path="/isometric-dots" component={Home} />
-      <Route path="/lined-paper" component={Home} />
-      <Route path="/checklist" component={Home} />
+      {templateRoutes}
+      <Route path="/templates" component={TemplatesPage} />
+      <Route path="/category/:slug" component={CategoryPage} />
+      <Route path="/preset/:slug" component={PresetPage} />
+      <Route path="/guides/:slug" component={GuidePage} />
       <Route path="/faq" component={FAQ} />
+      <Route path="/about">{() => <SitePage path="/about" />}</Route>
+      <Route path="/contact">{() => <SitePage path="/contact" />}</Route>
+      <Route path="/privacy">{() => <SitePage path="/privacy" />}</Route>
       <Route component={NotFound} />
     </Switch>
   );

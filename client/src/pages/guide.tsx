@@ -1,0 +1,55 @@
+import { Breadcrumbs } from '@/components/content/Breadcrumbs';
+import { ContentCard } from '@/components/content/ContentCard';
+import { PageLayout } from '@/components/content/PageLayout';
+import { getGuideBySlug, getPresetBySlug, getTemplateById } from '@/content';
+import { usePageMetadata } from '@/hooks/use-page-metadata';
+import NotFound from './not-found';
+
+interface GuidePageProps {
+  params: { slug: string };
+}
+
+export default function GuidePage({ params }: GuidePageProps) {
+  const guide = getGuideBySlug(params.slug);
+  if (!guide) return <NotFound />;
+
+  usePageMetadata(guide);
+  const relatedTemplates = guide.relatedTemplateIds.map(getTemplateById).filter(Boolean);
+  const relatedPresets = guide.relatedPresetIds.map(getPresetBySlug).filter(Boolean);
+
+  return (
+    <PageLayout>
+      <Breadcrumbs items={[{ label: 'Home', path: '/' }, { label: 'Guides', path: '/templates' }, { label: guide.h1, path: guide.path }]} />
+      <article className="max-w-3xl">
+        <h1 className="text-4xl font-bold text-primary">{guide.h1}</h1>
+        <p className="mt-4 text-lg text-muted-foreground">{guide.summary}</p>
+        {guide.body.map((section) => (
+          <section key={section.heading} className="mt-8">
+            <h2 className="text-2xl font-semibold">{section.heading}</h2>
+            <p className="mt-3 leading-7 text-muted-foreground">{section.body}</p>
+          </section>
+        ))}
+      </article>
+
+      <section className="mt-10">
+        <h2 className="text-2xl font-bold">Related Templates</h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {relatedTemplates.map((template) => template && (
+            <ContentCard key={template.id} href={template.path} title={template.label} description={template.summary} image={template.previewImage} />
+          ))}
+        </div>
+      </section>
+
+      {relatedPresets.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-2xl font-bold">Related Presets</h2>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {relatedPresets.map((preset) => preset && (
+              <ContentCard key={preset.id} href={preset.path} title={preset.label} description={preset.summary} image={preset.previewImage} />
+            ))}
+          </div>
+        </section>
+      )}
+    </PageLayout>
+  );
+}

@@ -2,6 +2,7 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { templates } from '@/content';
 
 interface FAQItem {
   question: string;
@@ -19,7 +20,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "What paper types are available?",
-    answer: "We offer 9 different paper types: Dot Grid (perfect for bullet journaling), Isometric Dots (for 3D sketching), Graph Paper (for math and technical work), Lined Paper (for writing), Music Staff (for composing), Checklist (for task lists), Hexagon Grid (for D&D and tabletop games), Knitting/Cross-Stitch (for craft patterns), and Calligraphy (for lettering practice)."
+    answer: `FreeGridPaper includes ${templates.length} current printable templates, including graph paper, dot grids, isometric dots, hex grids, lined paper, handwriting guides, music staff paper, guitar tab, bass tab, checklist paper, calligraphy guides, genkoyoushi, perspective grids, comic layouts, storyboards, engineering paper, and large-format poster options.`
   },
   {
     question: "What paper sizes can I choose from?",
@@ -150,13 +151,13 @@ export default function FAQ() {
             Still have questions?
           </p>
           <div className="flex justify-center gap-6 flex-wrap">
-            <a href="/pages/about.html" className="text-primary hover:underline text-base" data-testid="link-about">
+            <a href="/about" className="text-primary hover:underline text-base" data-testid="link-about">
               About Us
             </a>
-            <a href="/pages/contact.html" className="text-primary hover:underline text-base" data-testid="link-contact">
+            <a href="/contact" className="text-primary hover:underline text-base" data-testid="link-contact">
               Contact
             </a>
-            <a href="/pages/privacy.html" className="text-primary hover:underline text-base" data-testid="link-privacy">
+            <a href="/privacy" className="text-primary hover:underline text-base" data-testid="link-privacy">
               Privacy Policy
             </a>
           </div>
