@@ -40,6 +40,12 @@ export interface TemplateSettings {
 export interface FaqEntry {
   question: string;
   answer: string;
+  href?: string;
+}
+
+export interface ReferenceFact {
+  label: string;
+  value: string;
 }
 
 export interface ContentSection {
@@ -63,7 +69,12 @@ interface BaseContentEntry extends SeoEntry {
   previewImage: string;
   socialImage: string;
   summary: string;
+  answerSummary?: string;
+  updatedAt: string;
   body: ContentSection[];
+  bestFor?: string[];
+  referenceFacts?: ReferenceFact[];
+  relatedQuestions?: FaqEntry[];
   faqs?: FaqEntry[];
 }
 
@@ -98,6 +109,8 @@ export interface PresetEntry extends BaseContentEntry {
 
 export interface GuideEntry extends BaseContentEntry {
   kind: 'guide';
+  primaryTemplateId?: string;
+  primaryPresetId?: string;
   relatedTemplateIds: string[];
   relatedPresetIds: string[];
 }

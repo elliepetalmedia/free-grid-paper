@@ -1,5 +1,7 @@
 import type { PresetEntry, TemplateSettings } from './types';
 
+const updatedAt = '2026-05-22';
+
 const preset = (
   id: string,
   label: string,
@@ -25,12 +27,18 @@ const preset = (
   description,
   h1,
   summary,
+  answerSummary: `${label} is a stable preset page that opens the generator with proven settings for this paper format.`,
+  updatedAt,
   previewImage: `/previews/presets/${id}.svg`,
   socialImage: `/og/${id}.svg`,
+  bestFor: ['Quick printing from a canonical preset page', 'Reusable classroom or home downloads', 'Users who want a known measurement without manual setup'],
   useCases: ['Fast printing with proven settings', 'Classroom and home use', 'Reusable stationery downloads'],
   printTips: ['Print at Actual Size or 100% scale.', 'Disable Fit to Page when exact measurements matter.'],
   relatedPresetIds: [],
   relatedGuideIds: ['how-to-print-at-actual-size'],
+  relatedQuestions: [
+    { question: 'Why use a preset page instead of a shared settings URL?', answer: 'Preset pages have stable canonical URLs, unique descriptions, and print guidance, which makes them easier to revisit and cite.' },
+  ],
   body: [
     { heading: 'Why this preset works', body: summary },
     { heading: 'Printing guidance', body: 'The generator creates vector PDFs, so lines remain crisp when printed at the selected paper size.' },

@@ -1,6 +1,7 @@
 import { Link } from 'wouter';
 import { Breadcrumbs } from '@/components/content/Breadcrumbs';
 import { ContentCard } from '@/components/content/ContentCard';
+import { EntryContent } from '@/components/content/EntryContent';
 import { PageLayout } from '@/components/content/PageLayout';
 import { categories, getCategoryBySlug, getGuideBySlug, getTemplatesForCategory } from '@/content';
 import { usePageMetadata } from '@/hooks/use-page-metadata';
@@ -25,12 +26,14 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         <div>
           <h1 className="text-4xl font-bold text-primary">{category.h1}</h1>
           <p className="mt-4 text-lg text-muted-foreground">{category.summary}</p>
-          {category.body.map((section) => (
-            <section key={section.heading} className="mt-8">
-              <h2 className="text-2xl font-semibold">{section.heading}</h2>
-              <p className="mt-3 leading-7 text-muted-foreground">{section.body}</p>
-            </section>
-          ))}
+          <EntryContent
+            answerSummary={category.answerSummary}
+            bestFor={category.bestFor}
+            body={category.body}
+            referenceFacts={category.referenceFacts}
+            relatedQuestions={category.relatedQuestions}
+            updatedAt={category.updatedAt}
+          />
         </div>
         <aside className="rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-5">
           <h2 className="font-semibold text-foreground">Related Categories</h2>

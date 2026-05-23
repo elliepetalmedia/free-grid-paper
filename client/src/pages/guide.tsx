@@ -1,5 +1,6 @@
 import { Breadcrumbs } from '@/components/content/Breadcrumbs';
 import { ContentCard } from '@/components/content/ContentCard';
+import { EntryContent } from '@/components/content/EntryContent';
 import { PageLayout } from '@/components/content/PageLayout';
 import { getGuideBySlug, getPresetBySlug, getTemplateById } from '@/content';
 import { usePageMetadata } from '@/hooks/use-page-metadata';
@@ -16,6 +17,8 @@ export default function GuidePage({ params }: GuidePageProps) {
   usePageMetadata(guide);
   const relatedTemplates = guide.relatedTemplateIds.map(getTemplateById).filter(Boolean);
   const relatedPresets = guide.relatedPresetIds.map(getPresetBySlug).filter(Boolean);
+  const primaryTemplate = guide.primaryTemplateId ? getTemplateById(guide.primaryTemplateId) : relatedTemplates[0];
+  const primaryPreset = guide.primaryPresetId ? getPresetBySlug(guide.primaryPresetId) : relatedPresets[0];
 
   return (
     <PageLayout>
@@ -23,12 +26,26 @@ export default function GuidePage({ params }: GuidePageProps) {
       <article className="max-w-3xl">
         <h1 className="text-4xl font-bold text-primary">{guide.h1}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{guide.summary}</p>
-        {guide.body.map((section) => (
-          <section key={section.heading} className="mt-8">
-            <h2 className="text-2xl font-semibold">{section.heading}</h2>
-            <p className="mt-3 leading-7 text-muted-foreground">{section.body}</p>
-          </section>
-        ))}
+        <div className="mt-6 flex flex-wrap gap-3">
+          {primaryTemplate && (
+            <a href={primaryTemplate.path} className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+              Open template
+            </a>
+          )}
+          {primaryPreset && (
+            <a href={primaryPreset.path} className="inline-flex items-center rounded-md border border-sidebar-border px-4 py-2 text-sm font-medium text-foreground hover:bg-sidebar-accent/40">
+              Open preset
+            </a>
+          )}
+        </div>
+        <EntryContent
+          answerSummary={guide.answerSummary}
+          bestFor={guide.bestFor}
+          body={guide.body}
+          referenceFacts={guide.referenceFacts}
+          relatedQuestions={guide.relatedQuestions}
+          updatedAt={guide.updatedAt}
+        />
       </article>
 
       <section className="mt-10">

@@ -1,4 +1,5 @@
 import { Breadcrumbs } from '@/components/content/Breadcrumbs';
+import { EntryContent } from '@/components/content/EntryContent';
 import { PageLayout } from '@/components/content/PageLayout';
 import { getSitePageByPath } from '@/content';
 import { usePageMetadata } from '@/hooks/use-page-metadata';
@@ -20,12 +21,14 @@ export default function SitePage({ path }: SitePageProps) {
       <article className="max-w-3xl">
         <h1 className="text-4xl font-bold text-primary">{page.h1}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{page.summary}</p>
-        {page.body.map((section) => (
-          <section key={section.heading} className="mt-8">
-            <h2 className="text-2xl font-semibold">{section.heading}</h2>
-            <p className="mt-3 leading-7 text-muted-foreground">{section.body}</p>
-          </section>
-        ))}
+        <EntryContent
+          answerSummary={page.answerSummary}
+          bestFor={page.bestFor}
+          body={page.body}
+          referenceFacts={page.referenceFacts}
+          relatedQuestions={page.relatedQuestions}
+          updatedAt={page.updatedAt}
+        />
       </article>
     </PageLayout>
   );

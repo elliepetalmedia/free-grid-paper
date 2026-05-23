@@ -2,6 +2,7 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Breadcrumbs } from '@/components/content/Breadcrumbs';
 import { ContentCard } from '@/components/content/ContentCard';
+import { EntryContent } from '@/components/content/EntryContent';
 import { PageLayout } from '@/components/content/PageLayout';
 import { getCategoryById, getGuideBySlug, getPresetBySlug, getTemplateById, presets } from '@/content';
 import { usePageMetadata } from '@/hooks/use-page-metadata';
@@ -51,12 +52,14 @@ export default function PresetPage({ params }: PresetPageProps) {
               </Link>
             )}
           </div>
-          {preset.body.map((section) => (
-            <section key={section.heading} className="mt-8">
-              <h2 className="text-2xl font-semibold">{section.heading}</h2>
-              <p className="mt-3 leading-7 text-muted-foreground">{section.body}</p>
-            </section>
-          ))}
+          <EntryContent
+            answerSummary={preset.answerSummary}
+            bestFor={preset.bestFor}
+            body={preset.body}
+            referenceFacts={preset.referenceFacts}
+            relatedQuestions={preset.relatedQuestions}
+            updatedAt={preset.updatedAt}
+          />
         </div>
         <aside className="rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-5">
           <img src={preset.previewImage} alt="" className="w-full rounded bg-background" />

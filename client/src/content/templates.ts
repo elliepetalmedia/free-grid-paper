@@ -2,6 +2,7 @@ import type { TemplateEntry } from './types';
 
 const previewImage = '/previews/freegridpaper-preview.svg';
 const socialImage = '/og/freegridpaper-og.svg';
+const updatedAt = '2026-05-22';
 
 export const templates: TemplateEntry[] = ([
   {
@@ -486,6 +487,12 @@ export const templates: TemplateEntry[] = ([
   },
 ] as TemplateEntry[]).map((entry) => ({
   ...entry,
+  answerSummary: entry.summary,
+  updatedAt,
+  bestFor: entry.body[0]?.items ?? [entry.summary],
+  relatedQuestions: [
+    { question: `How should I print ${entry.label.toLowerCase()} correctly?`, answer: 'Export the PDF and print at Actual Size or 100% scale so the layout keeps its intended physical dimensions.', href: '/guides/how-to-print-at-actual-size' },
+  ],
   previewImage: `/previews/templates/${entry.id}.svg`,
   socialImage: `/og/${entry.id}.svg`,
 }));

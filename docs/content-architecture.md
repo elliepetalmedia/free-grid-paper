@@ -39,8 +39,16 @@ Every indexable entry must include:
 - `previewImage`
 - `socialImage`
 - `summary`
+- `updatedAt`
 - `body`
 - `indexable: true`
+
+Optional but recommended for answer-oriented pages:
+
+- `answerSummary`
+- `bestFor`
+- `referenceFacts`
+- `relatedQuestions`
 
 Preview images currently use static files under `client/public/previews`. Social images use `client/public/og`.
 
@@ -60,6 +68,14 @@ Do not add preset pages that only change a setting value. Each preset page needs
 ## Prerender And Sitemap
 
 `scripts/prerender.ts` reads `indexableEntries` from the registry. Pages with `indexable: true` are included in prerender output and `sitemap.xml`. Query-string share URLs are not canonical and are blocked by `robots.txt`.
+
+The prerender output also generates:
+
+- visible prerender-only crawl text per route
+- `llms.txt`
+- `llms-full.txt`
+- segmented sitemap files
+- `data/template-specs.json`
 
 ## Out Of Scope
 

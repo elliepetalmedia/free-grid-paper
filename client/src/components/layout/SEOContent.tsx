@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'wouter';
+import { EntryContent } from '@/components/content/EntryContent';
 import { getCategoryById, getPresetsForTemplate, getTemplateById, getTemplateByPaperType } from '@/content';
 import type { PaperType } from '@/content';
 
@@ -21,17 +22,14 @@ export const SEOContent: React.FC<SEOContentProps> = ({ paperType }) => {
         <h2 className="text-2xl font-bold mb-4 text-primary">{template.h1}</h2>
         <div className="prose prose-slate max-w-none text-slate-700">
           <p>{template.summary}</p>
-          {template.body.map((section) => (
-            <React.Fragment key={section.heading}>
-              <h3 className="text-lg font-semibold mt-6 mb-2 text-slate-800">{section.heading}</h3>
-              <p>{section.body}</p>
-              {section.items && (
-                <ul className="list-disc pl-5 space-y-1 mb-4">
-                  {section.items.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-              )}
-            </React.Fragment>
-          ))}
+          <EntryContent
+            answerSummary={template.answerSummary}
+            bestFor={template.bestFor}
+            body={template.body}
+            referenceFacts={template.referenceFacts}
+            relatedQuestions={template.relatedQuestions}
+            updatedAt={template.updatedAt}
+          />
           <div className="mt-8 pt-4 border-t border-slate-200">
             <p className="text-sm font-semibold text-slate-600 mb-2">Explore more:</p>
             <div className="flex flex-wrap gap-4 text-sm text-primary">

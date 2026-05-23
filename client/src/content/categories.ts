@@ -2,6 +2,7 @@ import type { CategoryEntry } from './types';
 
 const previewImage = '/previews/freegridpaper-preview.svg';
 const socialImage = '/og/freegridpaper-og.svg';
+const updatedAt = '2026-05-22';
 
 export const categories: CategoryEntry[] = [
   {
@@ -19,9 +20,21 @@ export const categories: CategoryEntry[] = [
     socialImage,
     templateIds: ['graph-paper', 'engineering', 'poster-size'],
     relatedCategoryIds: ['dot-and-drawing-grids', 'gaming-and-hex-grids', 'writing-and-handwriting-paper'],
-    relatedGuideIds: ['graph-paper-sizes-explained', 'how-to-print-at-actual-size'],
+    relatedGuideIds: ['graph-paper-sizes-explained', 'five-mm-vs-quarter-inch-graph-paper', 'best-graph-paper-for-engineering-homework', 'how-to-print-at-actual-size'],
+    answerSummary: 'Graph and grid paper covers measurement-driven work such as math, engineering, plotting, and poster planning. Start with 5 mm or 1/4 inch spacing for general work, then move larger or smaller based on how much detail the page needs.',
+    bestFor: ['Math worksheets and plotting', 'Engineering homework and technical sketches', 'Poster planning and large-format layouts'],
+    referenceFacts: [
+      { label: 'Best default spacings', value: '5 mm or 1/4 inch' },
+      { label: 'Best larger metric option', value: '1 cm' },
+      { label: 'Best large-format option', value: 'Poster size graph paper' },
+    ],
     body: [
       { heading: 'Choose the right grid', body: 'Use smaller grids for calculations and notes, larger grids for diagrams, and poster sizes when the page needs to be read from a distance.' },
+      { heading: 'Start with a reference preset', body: 'If you are unsure where to begin, pick a known spacing such as 5 mm, 1/4 inch, or 1 cm. Those presets give crawlers and users a canonical landing page instead of a query-string configuration.' },
+    ],
+    relatedQuestions: [
+      { question: 'What graph paper size is best for school or engineering work?', answer: '5 mm graph paper is the safest default for dense notes, problem sets, and technical work, while 1/4 inch is the most familiar US classroom option.', href: '/guides/best-graph-paper-for-engineering-homework' },
+      { question: 'How do 5 mm and 1/4 inch graph paper compare?', answer: '1/4 inch graph paper is slightly larger per square than 5 mm graph paper, so it feels roomier but fits fewer squares on the page.', href: '/guides/five-mm-vs-quarter-inch-graph-paper' },
     ],
     faqs: [
       { question: 'What grid spacing should I print?', answer: '5 mm and 1/4 inch are the most common everyday graph-paper spacings.' },
@@ -42,9 +55,19 @@ export const categories: CategoryEntry[] = [
     socialImage,
     templateIds: ['dot-grid', 'isometric-dots'],
     relatedCategoryIds: ['graph-and-grid-paper', 'art-and-storyboarding'],
-    relatedGuideIds: ['best-dot-grid-spacing-for-bullet-journaling'],
+    relatedGuideIds: ['best-dot-grid-spacing-for-bullet-journaling', 'a4-vs-letter-dot-grid'],
+    answerSummary: 'Dot grids are best when you want guidance without the visual weight of full lines. Most users should start with 5 mm spacing and choose A4 or Letter based on the paper in their printer.',
+    bestFor: ['Bullet journals and planners', 'Wireframes and rough layouts', 'Sketching with light page structure'],
+    referenceFacts: [
+      { label: 'Most common spacing', value: '5 mm dots' },
+      { label: 'Best page-size rule', value: 'Match your printer paper' },
+    ],
     body: [
       { heading: 'Subtle structure', body: 'Dot patterns give visual alignment without heavy lines, which makes them useful for both writing and drawing.' },
+    ],
+    relatedQuestions: [
+      { question: 'What dot spacing works best for bullet journals?', answer: '5 mm is the most common printable bullet-journal spacing because it balances structure and writing room.', href: '/guides/best-dot-grid-spacing-for-bullet-journaling' },
+      { question: 'Should I use A4 or Letter dot grid paper?', answer: 'Use the page size that matches the physical paper in your printer, then keep the dot spacing consistent.', href: '/guides/a4-vs-letter-dot-grid' },
     ],
   },
   {
@@ -62,9 +85,20 @@ export const categories: CategoryEntry[] = [
     socialImage,
     templateIds: ['lined-paper', 'checklist', 'handwriting', 'calligraphy', 'genkoyoushi'],
     relatedCategoryIds: ['graph-and-grid-paper', 'craft-and-pattern-paper'],
-    relatedGuideIds: ['handwriting-paper-by-grade-level', 'how-to-print-at-actual-size'],
+    relatedGuideIds: ['handwriting-paper-by-grade-level', 'college-ruled-vs-wide-ruled', 'how-to-print-at-actual-size'],
+    answerSummary: 'Writing and handwriting paper covers everyday ruled sheets, structured learner guides, and specialty writing formats. Choose based on the writer’s skill level and how much room each line needs.',
+    bestFor: ['School notes and journaling', 'Early handwriting practice', 'Specialty manuscript and calligraphy work'],
+    referenceFacts: [
+      { label: 'College ruled spacing', value: '7.1 mm' },
+      { label: 'Wide ruled spacing', value: '8.7 mm' },
+      { label: 'Best for early writers', value: 'Large handwriting guides' },
+    ],
     body: [
       { heading: 'Writing support', body: 'Choose ruled spacing for general writing, handwriting guides for learners, or specialty sheets for scripts and composition practice.' },
+    ],
+    relatedQuestions: [
+      { question: 'What is the difference between college ruled and wide ruled?', answer: 'College ruled fits more lines on the page, while wide ruled offers more room for larger handwriting.', href: '/guides/college-ruled-vs-wide-ruled' },
+      { question: 'What handwriting paper is best for kindergarten?', answer: 'Kindergarten handwriting paper with larger guides is usually best because it gives more room for letter formation and spacing.', href: '/guides/handwriting-paper-by-grade-level' },
     ],
   },
   {
@@ -82,7 +116,13 @@ export const categories: CategoryEntry[] = [
     socialImage,
     templateIds: ['music-staff', 'guitar-tab', 'bass-tab'],
     relatedCategoryIds: ['writing-and-handwriting-paper'],
-    relatedGuideIds: ['music-staff-spacing-guide'],
+    relatedGuideIds: ['music-staff-spacing-guide', 'best-blank-music-paper-for-piano-and-guitar'],
+    answerSummary: 'Music paper includes standard notation pages and tablature pages. Use staff paper for notation-centered work, then switch to guitar or bass tab when instrument fingering matters more than pitch notation.',
+    bestFor: ['Composition and theory worksheets', 'Guitar and bass practice sheets', 'Teacher handouts and transcription'],
+    referenceFacts: [
+      { label: 'Best for piano', value: 'Staff paper' },
+      { label: 'Best for guitar riffs', value: 'Guitar tab paper' },
+    ],
     body: [
       { heading: 'Music notation', body: 'Use staff paper for notation and tablature pages when the instrument-specific line layout matters.' },
     ],
@@ -102,9 +142,19 @@ export const categories: CategoryEntry[] = [
     socialImage,
     templateIds: ['hex-grid', 'poster-hex'],
     relatedCategoryIds: ['graph-and-grid-paper', 'art-and-storyboarding'],
-    relatedGuideIds: ['how-to-choose-hex-size-for-dnd-maps'],
+    relatedGuideIds: ['how-to-choose-hex-size-for-dnd-maps', 'common-hex-grid-sizes'],
+    answerSummary: 'Gaming and hex-grid pages are built around map usability. Start with 1 inch hexes for standard miniatures, then move smaller only when you need more territory on a single page.',
+    bestFor: ['D&D and tabletop battle maps', 'Regional and campaign planning', 'Hex-based strategy prototypes'],
+    referenceFacts: [
+      { label: 'Standard tabletop size', value: '1 inch hexes' },
+      { label: 'Compact alternative', value: '3/4 inch hexes' },
+      { label: 'Best large map option', value: 'Poster hex grid' },
+    ],
     body: [
       { heading: 'Map scale', body: 'Hex size controls how the map works at the table. One-inch hexes are the default for most miniatures.' },
+    ],
+    relatedQuestions: [
+      { question: 'What hex size should I print for D&D?', answer: 'Use 1 inch hexes when you need compatibility with standard miniatures and tactical tabletop play.', href: '/guides/how-to-choose-hex-size-for-dnd-maps' },
     ],
   },
   {
@@ -122,7 +172,9 @@ export const categories: CategoryEntry[] = [
     socialImage,
     templateIds: ['perspective-grid', 'perspective-grid-2', 'comic-layout', 'storyboard'],
     relatedCategoryIds: ['dot-and-drawing-grids', 'gaming-and-hex-grids'],
-    relatedGuideIds: [],
+    relatedGuideIds: ['printable-storyboard-sheets', 'printable-comic-panel-paper'],
+    answerSummary: 'Art and storyboarding templates help with page planning, perspective, and visual sequencing. Choose storyboards for screen-based shot planning and comic layouts for page-based pacing.',
+    bestFor: ['Storyboards and animatics', 'Comic page planning', 'Perspective drawing practice'],
     body: [
       { heading: 'Plan the page', body: 'These templates help artists frame scenes, establish perspective, and block page structure before final drawing.' },
     ],
@@ -142,9 +194,14 @@ export const categories: CategoryEntry[] = [
     socialImage,
     templateIds: ['knitting'],
     relatedCategoryIds: ['graph-and-grid-paper', 'writing-and-handwriting-paper'],
-    relatedGuideIds: [],
+    relatedGuideIds: ['printable-knitting-chart-paper'],
+    answerSummary: 'Craft and pattern paper is most useful when ordinary square graph paper does not reflect the proportions of the finished material. Knitting charts in particular benefit from rectangular printable cells.',
+    bestFor: ['Knitting and colorwork charts', 'Cross-stitch planning', 'Gauge-aware pattern design'],
     body: [
       { heading: 'Match the material', body: 'Rectangular grids can better match real stitch proportions than ordinary square graph paper.' },
     ],
   },
-];
+].map((entry) => ({
+  ...entry,
+  updatedAt,
+})) as CategoryEntry[];
