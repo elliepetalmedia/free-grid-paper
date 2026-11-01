@@ -25,9 +25,13 @@ import {
   type TemplateEntry,
 } from '../client/src/content/index';
 
+import { PRODUCTION_ORIGIN } from '../client/src/lib/canonical';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.resolve(__dirname, '../dist/public');
-const domain = 'https://freegridpaper.com';
+// Prerender and client canonicals share this one production origin,
+// so a preview host can never drift into a prerendered canonical.
+const domain = PRODUCTION_ORIGIN;
 
 function escapeHtml(value: string) {
   return value

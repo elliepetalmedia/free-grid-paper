@@ -676,12 +676,14 @@ export const guides: GuideEntry[] = [
   guide({
     id: 'how-to-draw-isometric-on-grid-paper',
     title: 'How to Draw Isometric on Grid Paper | FreeGridPaper',
-    description: 'Draw cubes and 3D objects on isometric grid paper using vertical edges and 60 and 120 degree edges, with no vanishing point.',
+    description: 'Draw cubes and 3D objects on isometric grid paper using horizontal, 60 degree, and 120 degree edges, with no vertical edge and no vanishing point.',
     h1: 'How to Draw Isometric on Grid Paper',
-    summary: 'Isometric drawing keeps all three axes at equal scale: vertical edges stay vertical, and the other two edges run along the grid diagonals.',
-    answerSummary: 'Isometric paper is not perspective paper. There is no vanishing point, and lengths along all three axes use the same scale, which is why a cube looks consistent from any part of the page. On this grid, one family of lines is horizontal, and the other two run at 60 and 120 degrees, forming equilateral triangles. Draw vertical edges along the page vertical, then draw the other edges along the two diagonal families.',
+    summary: 'Isometric drawing keeps all three axes at equal scale: every cube edge runs along a grid family, horizontal, 60 degrees, or 120 degrees, and there is no vertical edge on this grid.',
+    answerSummary: 'Isometric paper is not perspective paper. There is no vanishing point, and lengths along all three axes use the same scale, which is why a cube looks consistent from any part of the page. On this grid, one family of lines is horizontal, and the other two run at 60 and 120 degrees, forming equilateral triangles. There is no vertical family, so do not draw a vertical cube edge: it would leave the grid and distort the cube. Instead, start at a grid intersection and draw three edges, each the same number of triangles long, in directions 120 degrees apart: one horizontally to the right, one up and to the left along the 120 degree family, and one down and to the left along the 60 degree family. That Y shape is the cube corner, and closing it with parallel edges gives a geometrically correct cube.',
     referenceFacts: [
       { label: 'Line directions', value: '0, 60, and 120 degrees' },
+      { label: 'Vertical lines', value: 'None, do not draw a vertical cube edge' },
+      { label: 'Cube corner directions', value: '0, 120, and 240 degrees, 120 degrees apart' },
       { label: 'Triangle side, default', value: '1/4 inch, 6.35 mm' },
       { label: 'Vanishing point', value: 'None, unlike perspective drawing' },
       { label: 'Scale', value: 'Equal along all three axes' },
@@ -691,8 +693,8 @@ export const guides: GuideEntry[] = [
     body: [
       {
         heading: 'Draw a cube in three steps',
-        body: 'Start with a vertical edge for the front corner of the cube. From its top and bottom, draw edges along the two diagonal families, one going up and to the right at 60 degrees, the other going down and to the right at 120 degrees, or the mirror of those, depending on which faces you want visible. Close the cube with vertical edges at the far corners, then the remaining diagonal edges. If an edge does not follow a grid family, it is probably a perspective edge sneaking in.',
-        items: ['Count the same number of triangles along each edge for a regular cube.', 'Keep parallel edges parallel: in isometric drawing they never converge.', 'Use the horizontal grid lines as a level check for the top and bottom faces.'],
+        body: 'Start at a grid intersection and draw the cube corner as a Y: one edge horizontally to the right, one edge up and to the left along the 120 degree family, and one edge down and to the left along the 60 degree family. Make all three edges the same number of triangles long, so the arms are 120 degrees apart. Then close the cube by drawing, from the end of each arm, the edges parallel to the other two arms, until the three faces meet. Do not add a vertical edge anywhere: this grid has no vertical family, so a vertical edge is off grid even if it looks upright. If an edge does not follow a grid family, it is probably a perspective edge sneaking in.',
+        items: ['Count the same number of triangles along each edge for a regular cube.', 'Keep parallel edges parallel: in isometric drawing they never converge.', 'Check that no edge is vertical: a vertical edge is not on this grid, even though a cube drawn in the usual upright orientation would have one.'],
       },
       {
         heading: 'Lines or dots, which to choose',
@@ -700,7 +702,7 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: 'Common mistakes to check',
-        body: 'Drawing one face in perspective, with edges converging, breaks the isometric look even if the rest is correct. Using different lengths for edges that should be equal makes a box look stretched. Starting a cube in the middle of a triangle, instead of on a grid intersection, makes counting harder from the first edge.',
+        body: 'Drawing one face in perspective, with edges converging, breaks the isometric look even if the rest is correct. Drawing a vertical edge, as in the usual upright cube, breaks it on this grid, because no vertical family exists to follow. Using different lengths for edges that should be equal makes a box look stretched. Starting a cube in the middle of a triangle, instead of on a grid intersection, makes counting harder from the first edge.',
       },
       {
         heading: 'Printing guidance',

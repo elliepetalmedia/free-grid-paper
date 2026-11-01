@@ -12,6 +12,7 @@ import { SEOContent } from '@/components/layout/SEOContent';
 import { AdBanner } from '@/components/layout/AdBanner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { trackEvent } from '@/lib/analytics';
+import { setCanonicalAndRobots } from '@/hooks/use-page-metadata';
 import { Grid } from 'lucide-react';
 import { getSitePageByPath, getTemplateByPaperType, getTemplateByPath, getTopNavTemplates, templates } from '@/content';
 import { PAGE_SIZES } from '@/generator/page-sizes';
@@ -106,6 +107,11 @@ export default function Home() {
       setPageH1(homePage?.h1 || 'FreeGridPaper');
       setQuickDownloadText(null);
       updateMetaDescription(homePage?.description || "Free printable grid paper generator. Download custom graph paper, dot grid, lined paper, and more in PDF format.");
+      // Home previously set title and description but left the
+      // canonical from the previous page in place on client-side
+      // navigation. Set it explicitly for every route Home serves,
+      // including root, so back and forward navigation cannot stale it.
+      setCanonicalAndRobots(homePage?.canonicalPath ?? '/', window.location.hostname);
     } else if (!preset) {
       const fallbackTemplate = getTemplateByPaperType(DEFAULT_SETTINGS.paperType);
       document.title = fallbackTemplate?.title || 'FreeGridPaper - Free Printable Grid Paper Generator';
@@ -113,12 +119,14 @@ export default function Home() {
       setPageH1(fallbackTemplate?.h1 || 'FreeGridPaper');
       setQuickDownloadText(null);
       updateMetaDescription(fallbackTemplate?.description || "Free printable grid paper generator. Download custom graph paper, dot grid, lined paper, and more in PDF format.");
+      if (fallbackTemplate) setCanonicalAndRobots(fallbackTemplate.canonicalPath, window.location.hostname);
     } else {
       document.title = preset.title;
       setPageTitle(preset.title);
       setPageH1(preset.h1);
       setQuickDownloadText(preset.quickDownloadText || null);
       updateMetaDescription(preset.description);
+      setCanonicalAndRobots(preset.canonicalPath, window.location.hostname);
 
       baseSettings = {
         ...DEFAULT_SETTINGS,
@@ -458,13 +466,19 @@ export default function Home() {
 
   const drawCoordinatePlane = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     // Mirror drawCoordinatePlanePDF: centred grid, major lines and
-    // labels every five units, bold axes with arrowheads at both ends.
+    // labels every five units, bold axes with arrowheads at both ends,
+    // all inside the same 6 mm printable margin, so canvas and PDF agree.
     // Canvas coordinates here are in millimetres, so label sizes are
     // small numbers in the same units as the rulers use.
     const gridSize = Math.max(1, Math.min(20, settings.gridSize));
     const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
     const centerX = width / 2;
     const centerY = height / 2;
+    const margin = 6;
+    const leftEdge = margin;
+    const rightEdge = width - margin;
+    const topEdge = margin;
+    const bottomEdge = height - margin;
 
     ctx.strokeStyle = getColorStyle();
     for (let step = 0; step * gridSize <= Math.max(width, height); step++) {
@@ -473,22 +487,22 @@ export default function Home() {
       const left = centerX - step * gridSize;
       const down = centerY + step * gridSize;
       const up = centerY - step * gridSize;
-      if (right <= width) { ctx.beginPath(); ctx.moveTo(right, 0); ctx.lineTo(right, height); ctx.stroke(); }
-      if (left >= 0) { ctx.beginPath(); ctx.moveTo(left, 0); ctx.lineTo(left, height); ctx.stroke(); }
-      if (down <= height) { ctx.beginPath(); ctx.moveTo(0, down); ctx.lineTo(width, down); ctx.stroke(); }
-      if (up >= 0) { ctx.beginPath(); ctx.moveTo(0, up); ctx.lineTo(width, up); ctx.stroke(); }
+      if (right >= leftEdge && right <= rightEdge) { ctx.beginPath(); ctx.moveTo(right, topEdge); ctx.lineTo(right, bottomEdge); ctx.stroke(); }
+      if (left >= leftEdge && left <= rightEdge) { ctx.beginPath(); ctx.moveTo(left, topEdge); ctx.lineTo(left, bottomEdge); ctx.stroke(); }
+      if (down >= topEdge && down <= bottomEdge) { ctx.beginPath(); ctx.moveTo(leftEdge, down); ctx.lineTo(rightEdge, down); ctx.stroke(); }
+      if (up >= topEdge && up <= bottomEdge) { ctx.beginPath(); ctx.moveTo(leftEdge, up); ctx.lineTo(rightEdge, up); ctx.stroke(); }
     }
 
     const arrow = 3;
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = Math.max(0.8, weight * 2);
-    ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(width, centerY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, height); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(leftEdge, centerY); ctx.lineTo(rightEdge, centerY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(centerX, topEdge); ctx.lineTo(centerX, bottomEdge); ctx.stroke();
     ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(width, centerY); ctx.lineTo(width - arrow, centerY - arrow / 2); ctx.moveTo(width, centerY); ctx.lineTo(width - arrow, centerY + arrow / 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(arrow, centerY - arrow / 2); ctx.moveTo(0, centerY); ctx.lineTo(arrow, centerY + arrow / 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX - arrow / 2, arrow); ctx.moveTo(centerX, 0); ctx.lineTo(centerX + arrow / 2, arrow); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(centerX, height); ctx.lineTo(centerX - arrow / 2, height - arrow); ctx.moveTo(centerX, height); ctx.lineTo(centerX + arrow / 2, height - arrow); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rightEdge, centerY); ctx.lineTo(rightEdge - arrow, centerY - arrow / 2); ctx.moveTo(rightEdge, centerY); ctx.lineTo(rightEdge - arrow, centerY + arrow / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(leftEdge, centerY); ctx.lineTo(leftEdge + arrow, centerY - arrow / 2); ctx.moveTo(leftEdge, centerY); ctx.lineTo(leftEdge + arrow, centerY + arrow / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(centerX, topEdge); ctx.lineTo(centerX - arrow / 2, topEdge + arrow); ctx.moveTo(centerX, topEdge); ctx.lineTo(centerX + arrow / 2, topEdge + arrow); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(centerX, bottomEdge); ctx.lineTo(centerX - arrow / 2, bottomEdge - arrow); ctx.moveTo(centerX, bottomEdge); ctx.lineTo(centerX + arrow / 2, bottomEdge - arrow); ctx.stroke();
 
     ctx.fillStyle = '#000000';
     ctx.font = '3px sans-serif';
@@ -499,16 +513,16 @@ export default function Home() {
       const left = centerX - step * gridSize;
       const down = centerY + step * gridSize;
       const up = centerY - step * gridSize;
-      if (right < width) ctx.fillText(String(step), right, centerY + 5);
-      if (left > 0) ctx.fillText(String(-step), left, centerY + 5);
+      if (right < rightEdge) ctx.fillText(String(step), right, centerY + 5);
+      if (left > leftEdge) ctx.fillText(String(-step), left, centerY + 5);
       ctx.textAlign = 'right';
-      if (down < height) ctx.fillText(String(-step), centerX - 2, down);
-      if (up > 0) ctx.fillText(String(step), centerX - 2, up);
+      if (down < bottomEdge) ctx.fillText(String(-step), centerX - 2, down);
+      if (up > topEdge) ctx.fillText(String(step), centerX - 2, up);
       ctx.textAlign = 'center';
     }
     ctx.fillText('0', centerX + 2.5, centerY + 5);
-    ctx.fillText('x', width - 4, centerY + 5);
-    ctx.fillText('y', centerX + 2.5, 4);
+    ctx.fillText('x', rightEdge - 4, centerY + 5);
+    ctx.fillText('y', centerX + 2.5, topEdge + 2);
   };
 
   const drawCornellNotes = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -1265,12 +1279,17 @@ export default function Home() {
         </div>
       </nav>
 
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 md:overflow-hidden">
         {/*
           Fill the content area instead of assuming a 48px nav height.
           That assumption broke once Quick Access wraps and the nav
           grows taller, which would have cut off the bottom of the
           control panel, including Download PDF.
+          Overflow is hidden only on desktop, where the aside scrolls
+          internally. On mobile the aside is full width and tall, so
+          hiding overflow here would clip the bottom of the control
+          panel, including Download PDF, and the preview below it.
+          Mobile therefore lets the page scroll instead.
         */}
         <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-4 md:p-6 md:h-full md:overflow-y-auto flex-shrink-0">
           <div className="space-y-6">

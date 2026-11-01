@@ -207,16 +207,27 @@ function drawGraphPaperPDF(doc: jsPDF, width: number, height: number, opts: Sett
   for (let y = 0; y <= height; y += gridSize) doc.line(0, y, width, y);
 }
 
+export const COORDINATE_PLANE_MARGIN_MM = 6;
+
 function drawCoordinatePlanePDF(doc: jsPDF, width: number, height: number, opts: Settings) {
   // Four-quadrant plane centred on the page. Grid lines are counted
   // outwards from the origin, so a square is one unit in either
   // direction. Every fifth square is a major line and is labelled,
   // which keeps numbers readable instead of labelling every square.
+  // Printable margin: axes, arrowheads, grid lines, and labels stop
+  // 6 mm inside the page edge, so an ordinary printer at Actual Size
+  // does not clip them. The printable rectangle is symmetric about
+  // the centre, so the origin stays centred and quadrants stay equal.
   const gridSize = Math.max(1, Math.min(20, opts.gridSize));
   const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
   const color = getLineColor(opts);
   const centerX = width / 2;
   const centerY = height / 2;
+  const margin = COORDINATE_PLANE_MARGIN_MM;
+  const leftEdge = margin;
+  const rightEdge = width - margin;
+  const topEdge = margin;
+  const bottomEdge = height - margin;
 
   doc.setDrawColor(color[0], color[1], color[2]);
   for (let step = 0; step * gridSize <= Math.max(width, height); step++) {
@@ -226,28 +237,28 @@ function drawCoordinatePlanePDF(doc: jsPDF, width: number, height: number, opts:
     const left = centerX - step * gridSize;
     const down = centerY + step * gridSize;
     const up = centerY - step * gridSize;
-    if (right <= width) doc.line(right, 0, right, height);
-    if (left >= 0) doc.line(left, 0, left, height);
-    if (down <= height) doc.line(0, down, width, down);
-    if (up >= 0) doc.line(0, up, width, up);
+    if (right >= leftEdge && right <= rightEdge) doc.line(right, topEdge, right, bottomEdge);
+    if (left >= leftEdge && left <= rightEdge) doc.line(left, topEdge, left, bottomEdge);
+    if (down >= topEdge && down <= bottomEdge) doc.line(leftEdge, down, rightEdge, down);
+    if (up >= topEdge && up <= bottomEdge) doc.line(leftEdge, up, rightEdge, up);
   }
 
-  // Bold axes with arrowheads at both ends.
+  // Bold axes with arrowheads at both ends, all inside the margin.
   const axisWeight = Math.max(0.8, weight * 2);
   const arrow = 3;
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(axisWeight);
-  doc.line(0, centerY, width, centerY);
-  doc.line(centerX, 0, centerX, height);
+  doc.line(leftEdge, centerY, rightEdge, centerY);
+  doc.line(centerX, topEdge, centerX, bottomEdge);
   doc.setLineWidth(0.5);
-  doc.line(width, centerY, width - arrow, centerY - arrow / 2);
-  doc.line(width, centerY, width - arrow, centerY + arrow / 2);
-  doc.line(0, centerY, arrow, centerY - arrow / 2);
-  doc.line(0, centerY, arrow, centerY + arrow / 2);
-  doc.line(centerX, 0, centerX - arrow / 2, arrow);
-  doc.line(centerX, 0, centerX + arrow / 2, arrow);
-  doc.line(centerX, height, centerX - arrow / 2, height - arrow);
-  doc.line(centerX, height, centerX + arrow / 2, height - arrow);
+  doc.line(rightEdge, centerY, rightEdge - arrow, centerY - arrow / 2);
+  doc.line(rightEdge, centerY, rightEdge - arrow, centerY + arrow / 2);
+  doc.line(leftEdge, centerY, leftEdge + arrow, centerY - arrow / 2);
+  doc.line(leftEdge, centerY, leftEdge + arrow, centerY + arrow / 2);
+  doc.line(centerX, topEdge, centerX - arrow / 2, topEdge + arrow);
+  doc.line(centerX, topEdge, centerX + arrow / 2, topEdge + arrow);
+  doc.line(centerX, bottomEdge, centerX - arrow / 2, bottomEdge - arrow);
+  doc.line(centerX, bottomEdge, centerX + arrow / 2, bottomEdge - arrow);
 
   // Labels every five units, plus x, y, and the origin.
   doc.setFontSize(8);
@@ -257,14 +268,14 @@ function drawCoordinatePlanePDF(doc: jsPDF, width: number, height: number, opts:
     const left = centerX - step * gridSize;
     const down = centerY + step * gridSize;
     const up = centerY - step * gridSize;
-    if (right < width) doc.text(String(step), right, centerY + 5, { align: 'center' });
-    if (left > 0) doc.text(String(-step), left, centerY + 5, { align: 'center' });
-    if (down < height) doc.text(String(-step), centerX - 2, down + 1, { align: 'right' });
-    if (up > 0) doc.text(String(step), centerX - 2, up + 1, { align: 'right' });
+    if (right < rightEdge) doc.text(String(step), right, centerY + 5, { align: 'center' });
+    if (left > leftEdge) doc.text(String(-step), left, centerY + 5, { align: 'center' });
+    if (down < bottomEdge) doc.text(String(-step), centerX - 2, down + 1, { align: 'right' });
+    if (up > topEdge) doc.text(String(step), centerX - 2, up + 1, { align: 'right' });
   }
   doc.text('0', centerX + 1.5, centerY + 5);
-  doc.text('x', width - 4, centerY + 5, { align: 'center' });
-  doc.text('y', centerX + 2, 5);
+  doc.text('x', rightEdge - 4, centerY + 5, { align: 'center' });
+  doc.text('y', centerX + 2, topEdge + 3);
   doc.setTextColor(0, 0, 0);
 }
 

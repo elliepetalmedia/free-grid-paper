@@ -1,7 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
+import { useNotFoundMetadata } from "@/hooks/use-page-metadata";
 
 export default function NotFound() {
+  useNotFoundMetadata();
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md mx-4">
