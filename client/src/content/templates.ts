@@ -2,7 +2,11 @@ import type { TemplateEntry } from './types';
 
 const previewImage = '/previews/freegridpaper-preview.svg';
 const socialImage = '/og/freegridpaper-og.svg';
-const updatedAt = '2026-05-22';
+// Updated 2026-11-01 because every template page's generator changed in
+// this batch: trailing slash lookup, single download action, and
+// Quick Access wrapping. Template copy itself was not rewritten, so
+// do not bump this date again without a real page change.
+const updatedAt = '2026-11-01';
 
 export const templates: TemplateEntry[] = ([
   {
@@ -27,6 +31,102 @@ export const templates: TemplateEntry[] = ([
     body: [
       { heading: 'Best uses', body: 'Graph paper works for measured drawing, school math, engineering sketches, charts, and game maps.', items: ['Use 5 mm or 1/4 inch spacing for general notes.', 'Use darker lines for scanning or high-contrast worksheets.', 'Use larger sheets for posters and wall maps.'] },
       { heading: 'Print tip', body: 'Print at Actual Size or 100% scale so each square matches the selected measurement.' },
+    ],
+  },
+  {
+    kind: 'template',
+    id: 'coordinate-plane',
+    slug: 'coordinate-plane-paper',
+    path: '/coordinate-plane',
+    canonicalPath: '/coordinate-plane',
+    indexable: true,
+    label: 'Coordinate Plane',
+    categoryId: 'graph-and-grid-paper',
+    title: 'Printable Coordinate Plane Paper | FreeGridPaper',
+    description: 'Print a four-quadrant coordinate plane with bold axes, arrowheads, and numbered gridlines as a vector PDF on Letter or A4 paper.',
+    h1: 'Coordinate Plane Paper',
+    summary: 'A full four-quadrant coordinate plane for plotting points, graphing lines, and algebra homework.',
+    quickDownloadText: 'Coordinate Plane (Letter)',
+    previewImage,
+    socialImage,
+    settings: { paperType: 'coordinate-plane', pageSize: 'Letter', gridSize: 6.35 },
+    relatedTemplateIds: ['graph-paper', 'dot-grid', 'isometric-dots'],
+    popularPresetIds: ['quarter-inch-coordinate-plane'],
+    body: [
+      { heading: 'Best uses', body: 'Coordinate plane paper is for work that needs an origin and signed axes, not just a grid.', items: ['Plotting ordered pairs and points in all four quadrants.', 'Graphing linear equations, slope, and intercepts.', 'Algebra, geometry, and graphing homework and worksheets.'] },
+      { heading: 'Print tip', body: 'Print at Actual Size or 100% scale so each square stays one unit. At the default 1/4 inch spacing, five squares make five units, and the bold lines and numbers mark every five units.' },
+    ],
+  },
+  {
+    kind: 'template',
+    id: 'cornell-notes',
+    slug: 'cornell-notes-paper',
+    path: '/cornell-notes',
+    canonicalPath: '/cornell-notes',
+    indexable: true,
+    label: 'Cornell Notes',
+    categoryId: 'writing-and-handwriting-paper',
+    title: 'Printable Cornell Notes Paper | FreeGridPaper',
+    description: 'Print Cornell notes paper with a cue column, a notes column, and a summary section at the bottom, as a vector PDF on Letter or A4 paper.',
+    h1: 'Cornell Notes Paper',
+    summary: 'The classic Cornell layout for lectures, reading notes, and revision: cues on the left, notes on the right, summary at the bottom.',
+    quickDownloadText: 'Cornell Notes (Letter)',
+    previewImage,
+    socialImage,
+    settings: { paperType: 'cornell-notes', pageSize: 'Letter', lineHeight: 7.1 },
+    relatedTemplateIds: ['lined-paper', 'checklist', 'graph-paper'],
+    popularPresetIds: ['college-cornell-notes'],
+    body: [
+      { heading: 'Best uses', body: 'Cornell notes work when you want to review, not just record.', items: ['Lecture and class notes, with questions added later in the cue column.', 'Textbook and reading notes, summarised at the bottom after each session.', 'Revision: cover the notes column, answer from the cues, then check.'] },
+      { heading: 'Print tip', body: 'Print at Actual Size or 100% scale so the line spacing stays as selected. College ruled gives more lines per page; wide ruled gives more room per line. The summary section is seven lines tall at the selected spacing.' },
+    ],
+  },
+  {
+    kind: 'template',
+    id: 'polar-grid',
+    slug: 'polar-grid-paper',
+    path: '/polar-grid',
+    canonicalPath: '/polar-grid',
+    indexable: true,
+    label: 'Polar Grid',
+    categoryId: 'graph-and-grid-paper',
+    title: 'Printable Polar Grid Paper | FreeGridPaper',
+    description: 'Print polar grid paper with concentric circles, 15 degree spokes, and angle labels as a vector PDF on Letter or A4 paper.',
+    h1: 'Polar Grid Paper',
+    summary: 'Concentric circles and radial spokes for polar plots, angles, trigonometry, and circular charts.',
+    quickDownloadText: 'Polar Grid (Letter)',
+    previewImage,
+    socialImage,
+    settings: { paperType: 'polar-grid', pageSize: 'Letter', gridSize: 10 },
+    relatedTemplateIds: ['graph-paper', 'coordinate-plane', 'hex-grid'],
+    popularPresetIds: ['polar-grid-10mm'],
+    body: [
+      { heading: 'Best uses', body: 'Polar grid paper is for work measured by radius and angle, not by x and y alone.', items: ['Plotting polar equations and points in polar coordinates.', 'Trigonometry, angles, and circular motion worksheets.', 'Circular charts, compass work, and radial diagrams.'] },
+      { heading: 'Print tip', body: 'Print at Actual Size or 100% scale so the ring spacing stays as selected. The default 10 mm spacing gives nine rings on Letter paper, with spokes every 15 degrees and angle labels every 30 degrees. Lower the ring spacing in the generator for more, finer rings.' },
+    ],
+  },
+  {
+    kind: 'template',
+    id: 'isometric-grid',
+    slug: 'isometric-grid-paper',
+    path: '/isometric-grid',
+    canonicalPath: '/isometric-grid',
+    indexable: true,
+    label: 'Isometric Grid',
+    categoryId: 'dot-and-drawing-grids',
+    title: 'Printable Isometric Grid Paper | FreeGridPaper',
+    description: 'Print isometric grid paper with full lines at 0, 60, and 120 degrees forming equilateral triangles, as a vector PDF on Letter or A4 paper.',
+    h1: 'Isometric Grid Paper',
+    summary: 'Full isometric lines for 3D sketching, architecture, and design, distinct from isometric dots, which show only the points.',
+    quickDownloadText: 'Isometric Grid (Letter)',
+    previewImage,
+    socialImage,
+    settings: { paperType: 'isometric-grid', pageSize: 'Letter', gridSize: 6.35 },
+    relatedTemplateIds: ['isometric-dots', 'graph-paper', 'hex-grid'],
+    popularPresetIds: ['quarter-inch-isometric-grid'],
+    body: [
+      { heading: 'Best uses', body: 'Isometric grid lines guide 3D drawing where dots alone leave the edges to guess.', items: ['Isometric sketches, cubes, and 3D objects.', 'Architecture, product, and game map sketches.', 'Geometry and technical drawing practice.'] },
+      { heading: 'Print tip', body: 'Print at Actual Size or 100% scale so the triangle size stays as selected. The default 1/4 inch triangle side gives small, precise triangles; increase the size in the generator for larger sketches.' },
     ],
   },
   {

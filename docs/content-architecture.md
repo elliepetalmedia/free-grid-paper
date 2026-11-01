@@ -4,7 +4,9 @@ FreeGridPaper keeps crawlable content, route metadata, internal links, and prere
 
 ## Canonical URL Policy
 
-Existing template routes remain canonical. Do not move `/graph`, `/dot-grid`, `/hex-paper`, `/music-staff`, `/engineering`, `/poster-size`, `/poster-hex`, `/calligraphy`, `/knitting`, `/handwriting`, `/guitar-tab`, `/bass-tab`, `/genkoyoushi`, `/perspective-1`, `/perspective-2`, `/comic-2x3`, `/storyboard`, `/isometric-dots`, `/lined-paper`, or `/checklist` without a separate redirect migration.
+Existing template routes remain in place. Do not move `/graph`, `/coordinate-plane`, `/cornell-notes`, `/polar-grid`, `/isometric-grid`, `/dot-grid`, `/hex-paper`, `/music-staff`, `/engineering`, `/poster-size`, `/poster-hex`, `/calligraphy`, `/knitting`, `/handwriting`, `/guitar-tab`, `/bass-tab`, `/genkoyoushi`, `/perspective-1`, `/perspective-2`, `/comic-2x3`, `/storyboard`, `/isometric-dots`, `/lined-paper`, or `/checklist` without a separate redirect migration. Their canonical URLs are the same routes with a trailing slash, for example `/graph/`.
+
+Root `/` is the generator itself, with canonical `/`, and is not a redirect to `/templates`. `/templates` remains the browsable library, with its own canonical `/templates/`, following the trailing slash policy below. App routes are written slash free, for example `/templates`, and their canonical versions carry the slash.
 
 New crawlable architecture routes use:
 
@@ -54,7 +56,7 @@ Preview images currently use static files under `client/public/previews`. Social
 
 ## Internal Linking Rules
 
-- Root links to `/templates`, major categories, and important starting templates.
+- Root is the generator and links to `/templates` from its nav and footer, plus major categories and important starting templates via its Quick Access bar and below-preview content.
 - `/templates` links to every category and template.
 - Category pages link to child templates, sibling categories, and relevant guides.
 - Template pages link to parent category, related templates, and popular presets.
@@ -68,6 +70,10 @@ Do not add preset pages that only change a setting value. Each preset page needs
 ## Prerender And Sitemap
 
 `scripts/prerender.ts` reads `indexableEntries` from the registry. Pages with `indexable: true` are included in prerender output and `sitemap.xml`. Query-string share URLs are not canonical and are blocked by `robots.txt`.
+
+Canonical URLs carry a trailing slash, except the root `/`, because prerendered pages are served as directory `index.html` files and static hosting serves those at the slash URL. App routes in `path` stay slash free for Wouter, and `canonicalPath` is derived from `path` in `client/src/content/index.ts`. Sitemap `<loc>`, prerender canonical, og:url, JSON-LD URLs, and prerender body links all use the canonical slash version, so a sitemap URL must not redirect to a different canonical. Do not change canonical back to slash free without also changing how the pages are served.
+
+`updatedAt` is also the sitemap `<lastmod>`, the prerender `article:modified_time`, and the JSON-LD `dateModified`, and it is shown on the page as "Updated". Only bump it for a page that actually changed in content or generator behavior. Do not do a blanket date refresh across categories, guides, presets, or site pages that did not change, just to look fresh.
 
 The prerender output also generates:
 

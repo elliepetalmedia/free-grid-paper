@@ -49,6 +49,18 @@ export function renderPdfPage(
     case 'graph-paper':
       drawGraphPaperPDF(doc, width, height, tempSettings);
       break;
+    case 'coordinate-plane':
+      drawCoordinatePlanePDF(doc, width, height, tempSettings);
+      break;
+    case 'cornell-notes':
+      drawCornellNotesPDF(doc, width, height, tempSettings);
+      break;
+    case 'polar-grid':
+      drawPolarGridPDF(doc, width, height, tempSettings);
+      break;
+    case 'isometric-grid':
+      drawIsometricGridPDF(doc, width, height, tempSettings);
+      break;
     case 'lined-paper':
       drawLinedPaperPDF(doc, width, height, tempSettings);
       break;
@@ -193,6 +205,173 @@ function drawGraphPaperPDF(doc: jsPDF, width: number, height: number, opts: Sett
   doc.setLineWidth(weight);
   for (let x = 0; x <= width; x += gridSize) doc.line(x, 0, x, height);
   for (let y = 0; y <= height; y += gridSize) doc.line(0, y, width, y);
+}
+
+function drawCoordinatePlanePDF(doc: jsPDF, width: number, height: number, opts: Settings) {
+  // Four-quadrant plane centred on the page. Grid lines are counted
+  // outwards from the origin, so a square is one unit in either
+  // direction. Every fifth square is a major line and is labelled,
+  // which keeps numbers readable instead of labelling every square.
+  const gridSize = Math.max(1, Math.min(20, opts.gridSize));
+  const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
+  const color = getLineColor(opts);
+  const centerX = width / 2;
+  const centerY = height / 2;
+
+  doc.setDrawColor(color[0], color[1], color[2]);
+  for (let step = 0; step * gridSize <= Math.max(width, height); step++) {
+    const isMajor = step % 5 === 0;
+    doc.setLineWidth(isMajor ? Math.min(2, weight * 1.6) : weight);
+    const right = centerX + step * gridSize;
+    const left = centerX - step * gridSize;
+    const down = centerY + step * gridSize;
+    const up = centerY - step * gridSize;
+    if (right <= width) doc.line(right, 0, right, height);
+    if (left >= 0) doc.line(left, 0, left, height);
+    if (down <= height) doc.line(0, down, width, down);
+    if (up >= 0) doc.line(0, up, width, up);
+  }
+
+  // Bold axes with arrowheads at both ends.
+  const axisWeight = Math.max(0.8, weight * 2);
+  const arrow = 3;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(axisWeight);
+  doc.line(0, centerY, width, centerY);
+  doc.line(centerX, 0, centerX, height);
+  doc.setLineWidth(0.5);
+  doc.line(width, centerY, width - arrow, centerY - arrow / 2);
+  doc.line(width, centerY, width - arrow, centerY + arrow / 2);
+  doc.line(0, centerY, arrow, centerY - arrow / 2);
+  doc.line(0, centerY, arrow, centerY + arrow / 2);
+  doc.line(centerX, 0, centerX - arrow / 2, arrow);
+  doc.line(centerX, 0, centerX + arrow / 2, arrow);
+  doc.line(centerX, height, centerX - arrow / 2, height - arrow);
+  doc.line(centerX, height, centerX + arrow / 2, height - arrow);
+
+  // Labels every five units, plus x, y, and the origin.
+  doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0);
+  for (let step = 5; step * gridSize <= Math.max(width, height); step += 5) {
+    const right = centerX + step * gridSize;
+    const left = centerX - step * gridSize;
+    const down = centerY + step * gridSize;
+    const up = centerY - step * gridSize;
+    if (right < width) doc.text(String(step), right, centerY + 5, { align: 'center' });
+    if (left > 0) doc.text(String(-step), left, centerY + 5, { align: 'center' });
+    if (down < height) doc.text(String(-step), centerX - 2, down + 1, { align: 'right' });
+    if (up > 0) doc.text(String(step), centerX - 2, up + 1, { align: 'right' });
+  }
+  doc.text('0', centerX + 1.5, centerY + 5);
+  doc.text('x', width - 4, centerY + 5, { align: 'center' });
+  doc.text('y', centerX + 2, 5);
+  doc.setTextColor(0, 0, 0);
+}
+
+function drawCornellNotesPDF(doc: jsPDF, width: number, height: number, opts: Settings) {
+  // Standard Cornell layout: a title strip at the top, a cue column
+  // taking 30 percent of the width on the left, a wider notes column
+  // on the right, and a summary section at the bottom, seven ruled
+  // lines tall. Ruled lines run across the full width so cue and
+  // notes lines stay aligned; only the divider and the summary
+  // separator are bold.
+  const lineHeight = Math.max(5, Math.min(15, opts.lineHeight));
+  const cueWidth = width * 0.3;
+  const headerHeight = Math.max(12, lineHeight * 1.5);
+  const summaryHeight = lineHeight * 7;
+  const summaryTop = height - summaryHeight;
+
+  doc.setDrawColor(204, 204, 204);
+  doc.setLineWidth(0.5);
+  doc.line(0, headerHeight, width, headerHeight);
+  for (let y = headerHeight + lineHeight; y < summaryTop; y += lineHeight) doc.line(0, y, width, y);
+  for (let y = summaryTop + lineHeight; y < height; y += lineHeight) doc.line(0, y, width, y);
+
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.8);
+  doc.line(cueWidth, headerHeight, cueWidth, summaryTop);
+  doc.line(0, summaryTop, width, summaryTop);
+}
+
+function drawPolarGridPDF(doc: jsPDF, width: number, height: number, opts: Settings) {
+  // One polar grid centred on the page. Concentric circles are spaced
+  // by gridSize, spokes run every 15 degrees, the four cardinal spokes
+  // are bold, and angle labels every 30 degrees sit just outside the
+  // outermost circle, so an 8 mm margin is kept for them.
+  const spacing = Math.max(1, Math.min(20, opts.gridSize));
+  const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
+  const color = getLineColor(opts);
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const maxRadius = Math.min(width, height) / 2 - 8;
+  const ringCount = Math.floor(maxRadius / spacing);
+
+  doc.setDrawColor(color[0], color[1], color[2]);
+  for (let ring = 1; ring <= ringCount; ring++) {
+    doc.setLineWidth(ring % 5 === 0 ? Math.min(2, weight * 1.6) : weight);
+    doc.circle(centerX, centerY, ring * spacing, 'S');
+  }
+
+  doc.setDrawColor(0, 0, 0);
+  for (let angle = 0; angle < 360; angle += 15) {
+    const radians = (angle * Math.PI) / 180;
+    const isCardinal = angle % 90 === 0;
+    doc.setLineWidth(isCardinal ? Math.max(0.8, weight * 2) : weight);
+    doc.line(centerX, centerY, centerX + Math.cos(radians) * maxRadius, centerY - Math.sin(radians) * maxRadius);
+  }
+  doc.setFillColor(0, 0, 0);
+  doc.circle(centerX, centerY, 0.8, 'F');
+
+  doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0);
+  for (let angle = 0; angle < 360; angle += 30) {
+    const radians = (angle * Math.PI) / 180;
+    const labelRadius = maxRadius + 4.5;
+    doc.text(`${angle}°`, centerX + Math.cos(radians) * labelRadius, centerY - Math.sin(radians) * labelRadius + 1, { align: 'center' });
+  }
+}
+
+function clippedSlopeSegment(m: number, b: number, width: number, height: number): [number, number, number, number] | null {
+  // Intersections of y = m*x + b with the four page edges, deduplicated.
+  const points: [number, number][] = [];
+  const add = (x: number, y: number) => {
+    if (x >= -0.01 && x <= width + 0.01 && y >= -0.01 && y <= height + 0.01) {
+      const clamped: [number, number] = [Math.max(0, Math.min(width, x)), Math.max(0, Math.min(height, y))];
+      if (!points.some(([px, py]) => Math.abs(px - clamped[0]) < 0.01 && Math.abs(py - clamped[1]) < 0.01)) points.push(clamped);
+    }
+  };
+  add(0, b);
+  add(width, m * width + b);
+  add(-b / m, 0);
+  add((height - b) / m, height);
+  if (points.length < 2) return null;
+  return [points[0][0], points[0][1], points[1][0], points[1][1]];
+}
+
+function drawIsometricGridPDF(doc: jsPDF, width: number, height: number, opts: Settings) {
+  // Triangular lattice, unlike isometric dots: three families of lines
+  // at 0 degrees, 60 degrees, and 120 degrees. gridSize is the
+  // triangle side; the spacing between parallel lines is side times
+  // sqrt(3) / 2, and the intercept step for the diagonal families is
+  // side times sqrt(3), because distance is intercept divided by 2.
+  const side = Math.max(1, Math.min(20, opts.gridSize));
+  const weight = Math.max(0.1, Math.min(2, opts.lineWeight));
+  const color = getLineColor(opts);
+  const rowHeight = side * Math.sqrt(3) / 2;
+  const interceptStep = side * Math.sqrt(3);
+  const slope = Math.sqrt(3);
+
+  doc.setDrawColor(color[0], color[1], color[2]);
+  doc.setLineWidth(weight);
+  for (let y = 0; y <= height; y += rowHeight) doc.line(0, y, width, y);
+  for (let b = -slope * width; b <= height; b += interceptStep) {
+    const segment = clippedSlopeSegment(slope, b, width, height);
+    if (segment) doc.line(segment[0], segment[1], segment[2], segment[3]);
+  }
+  for (let b = 0; b <= height + slope * width; b += interceptStep) {
+    const segment = clippedSlopeSegment(-slope, b, width, height);
+    if (segment) doc.line(segment[0], segment[1], segment[2], segment[3]);
+  }
 }
 
 function drawLinedPaperPDF(doc: jsPDF, width: number, height: number, opts: Settings) {

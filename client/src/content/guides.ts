@@ -19,6 +19,9 @@ interface GuideConfig {
   relatedTemplateIds: string[];
   relatedPresetIds: string[];
   relatedQuestions?: GuideEntry['relatedQuestions'];
+  // Only for guides actually written or changed on a later date.
+  // Older guides keep the shared date; do not bump them in bulk.
+  updatedAt?: string;
 }
 
 const guide = ({
@@ -36,6 +39,7 @@ const guide = ({
   relatedTemplateIds,
   relatedPresetIds,
   relatedQuestions = [],
+  updatedAt: updatedAtOverride = updatedAt,
 }: GuideConfig): GuideEntry => ({
   kind: 'guide',
   id,
@@ -48,7 +52,7 @@ const guide = ({
   h1,
   summary,
   answerSummary,
-  updatedAt,
+  updatedAt: updatedAtOverride,
   previewImage,
   socialImage,
   referenceFacts,
@@ -538,5 +542,178 @@ export const guides: GuideEntry[] = [
     primaryPresetId: 'blank-sheet-music-10-staves',
     relatedTemplateIds: ['music-staff', 'guitar-tab', 'bass-tab'],
     relatedPresetIds: ['blank-sheet-music-10-staves', 'blank-guitar-tab-paper', 'blank-bass-tab-paper'],
+  }),
+  guide({
+    id: 'how-to-plot-points-on-a-coordinate-plane',
+    title: 'How to Plot Points on a Coordinate Plane | FreeGridPaper',
+    description: 'Learn to read quadrants, count from the origin, and plot ordered pairs on a printable coordinate plane.',
+    h1: 'How to Plot Points on a Coordinate Plane',
+    summary: 'Start at the origin, move horizontally for x first, then vertically for y, and count squares, not page edges.',
+    answerSummary: 'An ordered pair (x, y) always means x first, then y. From the origin, move right for positive x and left for negative x, then up for positive y and down for negative y. On the FreeGridPaper plane, one square is one unit, and bold lines and numbers mark every five units.',
+    referenceFacts: [
+      { label: 'Origin', value: '(0, 0), where the axes cross' },
+      { label: 'Quadrant I', value: 'x positive, y positive, top right' },
+      { label: 'Quadrant II', value: 'x negative, y positive, top left' },
+      { label: 'Quadrant III', value: 'x negative, y negative, bottom left' },
+      { label: 'Quadrant IV', value: 'x positive, y negative, bottom right' },
+      { label: 'Major lines', value: 'Every five units, on the printable plane' },
+    ],
+    bestFor: ['Algebra homework and graphing', 'Plotting ordered pairs for the first time', 'Checking slope and intercepts on paper'],
+    body: [
+      {
+        heading: 'Read the axes before you plot',
+        body: 'The horizontal axis is x and the vertical axis is y. The sign of each number tells you the direction from the origin, and the quadrant tells you whether you should end up in the top right, top left, bottom left, or bottom right. If your point lands in a different quadrant from the signs, you swapped a direction or swapped x and y.',
+        items: ['(3, 4) is right 3, up 4, in Quadrant I.', '(-2, 5) is left 2, up 5, in Quadrant II.', '(-4, -1) is left 4, down 1, in Quadrant III.', '(5, -3) is right 5, down 3, in Quadrant IV.'],
+      },
+      {
+        heading: 'Count from the origin, not from the edge',
+        body: 'The most common plotting error is counting squares from the edge of the page. Always start at the labelled 0 where the axes cross. On this plane, count one square per unit, and use the bold lines as checkpoints: the first bold line out from the origin is five units, the next is ten, and so on. That checkpoint catches a miscount before it becomes a wrong graph.',
+      },
+      {
+        heading: 'Common mistakes to check',
+        body: 'Swap x and y and the point mirrors across the diagonal. Miss a negative sign and the point jumps to the opposite side of an axis. Plot a line by plotting at least two points, then check a third, because a single wrong point can hide behind a straight looking line that is actually shifted.',
+      },
+      {
+        heading: 'Printing guidance',
+        body: 'Print at Actual Size or 100% scale so one square stays one unit. The default 1/4 inch plane is a familiar classroom size; use 5 mm if you want more points on one page.',
+      },
+    ],
+    primaryTemplateId: 'coordinate-plane',
+    primaryPresetId: 'quarter-inch-coordinate-plane',
+    relatedTemplateIds: ['coordinate-plane', 'graph-paper'],
+    relatedPresetIds: ['quarter-inch-coordinate-plane', 'quarter-inch-graph-paper'],
+    relatedQuestions: [
+      { question: 'Which number comes first in an ordered pair?', answer: 'x comes first, then y. Move horizontally for x, then vertically for y, always starting from the origin.', href: '/guides/graph-paper-sizes-explained' },
+    ],
+    updatedAt: '2026-11-01',
+  }),
+  guide({
+    id: 'cornell-note-taking-method',
+    title: 'The Cornell Note Taking Method | FreeGridPaper',
+    description: 'Use the Cornell method: notes on the right, cues and questions on the left, and a summary at the bottom after review.',
+    h1: 'The Cornell Note Taking Method',
+    summary: 'Record notes during class, add cues and questions after, recite from the cues, then write the summary last, not first.',
+    answerSummary: 'Cornell notes split the page into three jobs. The wide right column is for recording notes during a lecture or reading. The narrow left column is for cues, questions, and key words, added after the session. The bottom section is for a summary written after review, which is what makes the page useful for revision instead of just a transcript.',
+    referenceFacts: [
+      { label: 'Cue column', value: 'About 30 percent of the width, on the left' },
+      { label: 'Notes column', value: 'The wider right column' },
+      { label: 'Summary section', value: 'Seven lines tall, at the bottom' },
+      { label: 'College ruled', value: '7.1 mm line spacing' },
+      { label: 'Wide ruled', value: '8.7 mm line spacing' },
+    ],
+    bestFor: ['Lecture and class notes', 'Textbook and reading notes', 'Revision from cues instead of rereading'],
+    body: [
+      {
+        heading: 'Record, in the right column only',
+        body: 'During the lecture, write in the wide right column and leave the left column blank. Capture main ideas, definitions, and examples in your own words where you can, because copying word for word is slower and harder to revise from later.',
+      },
+      {
+        heading: 'Reduce, within a day if you can',
+        body: 'Soon after the session, go back and fill the left column with short cues: questions the notes answer, key terms, and prompts for the main ideas. This step is the method, not an extra. If you skip it, you have lined paper with a divider, not Cornell notes.',
+        items: ['Turn a heading into a question, for example, what does this term mean, or why does this step matter.', 'Keep cues short, one phrase per line, so they work as recall prompts.', 'Star cues you could not answer without looking, and revisit those first.'],
+      },
+      {
+        heading: 'Recite, then summarise',
+        body: 'Cover the right column, read a cue, and say the answer out loud before checking. That retrieval step is what builds memory; rereading the notes column without covering it feels easier and teaches less. Only after reciting should you write the summary at the bottom, in a few sentences, in your own words. A summary written before review is usually just a repeat of the first paragraph.',
+      },
+      {
+        heading: 'Printing guidance',
+        body: 'Print at Actual Size or 100% scale. College ruled fits more lines per page, wide ruled gives more room per line, and the summary section stays seven lines tall at either spacing.',
+      },
+    ],
+    primaryTemplateId: 'cornell-notes',
+    primaryPresetId: 'college-cornell-notes',
+    relatedTemplateIds: ['cornell-notes', 'lined-paper'],
+    relatedPresetIds: ['college-cornell-notes', 'college-ruled-paper'],
+    relatedQuestions: [
+      { question: 'When should I write the summary?', answer: 'After review and reciting, not during the lecture. The summary should capture what you now understand, in your own words.', href: '/guides/college-ruled-vs-wide-ruled' },
+    ],
+    updatedAt: '2026-11-01',
+  }),
+  guide({
+    id: 'how-to-plot-polar-coordinates',
+    title: 'How to Plot Polar Coordinates | FreeGridPaper',
+    description: 'Learn to read polar grid paper: count rings out from the centre for r, and use spokes and angle labels for theta.',
+    h1: 'How to Plot Polar Coordinates',
+    summary: 'Polar points are (r, theta): count rings out from the centre for distance, then follow the spoke for the angle.',
+    answerSummary: 'A polar point (r, theta) is not x then y. r is how many rings out from the centre you go, and theta is the angle from the positive horizontal axis, measured counter-clockwise. On the FreeGridPaper polar grid, spokes run every 15 degrees, angle labels run every 30 degrees, and the cardinal spokes at 0, 90, 180, and 270 degrees are bold.',
+    referenceFacts: [
+      { label: 'r', value: 'Distance from the centre, counted in rings' },
+      { label: 'Theta', value: 'Angle from the positive horizontal axis, counter-clockwise' },
+      { label: 'Spokes', value: 'Every 15 degrees' },
+      { label: 'Angle labels', value: 'Every 30 degrees, outside the outer circle' },
+      { label: 'Default ring spacing', value: '10 mm, nine rings on Letter paper' },
+    ],
+    bestFor: ['Polar equations and trigonometry', 'Angles, circles, and circular motion', 'Converting between polar and rectangular thinking'],
+    body: [
+      {
+        heading: 'Plot in two steps, angle then distance, or distance then angle',
+        body: 'Either order works if you keep them separate. Find the angle first by following the labelled spoke from the centre, then count rings out along that spoke. Or count rings first on the 0 degree spoke, then rotate to the angle. Mixing the two, for example counting rings along the wrong spoke, is the usual error.',
+        items: ['(3, 60 degrees) is three rings out along the 60 degree spoke, up and to the right.', '(4, 180 degrees) is four rings out to the left, on the bold horizontal spoke.', '(2, 270 degrees) is two rings straight down.'],
+      },
+      {
+        heading: 'What about negative r and angles over 360 degrees',
+        body: 'A negative r means go the same distance in the opposite direction: (3, 60 degrees) with r negated lands where (3, 240 degrees) lands. An angle over 360 degrees just wraps around the circle again, so 390 degrees is the same spoke as 30 degrees. Keep the centre marked, because every ring and spoke is measured from there, not from the edge of the page.',
+      },
+      {
+        heading: 'Common mistakes to check',
+        body: 'Measuring the angle from the vertical axis instead of the horizontal axis rotates the whole plot by 90 degrees. Counting rings from the outer circle inward reverses r. Using radians when the labels are in degrees, or vice versa, shifts every point, so check the unit before you start.',
+      },
+      {
+        heading: 'Printing guidance',
+        body: 'Print at Actual Size or 100% scale so ring spacing stays as selected. Lower the ring spacing in the generator for more, finer rings, and raise it for fewer, larger rings.',
+      },
+    ],
+    primaryTemplateId: 'polar-grid',
+    primaryPresetId: 'polar-grid-10mm',
+    relatedTemplateIds: ['polar-grid', 'coordinate-plane'],
+    relatedPresetIds: ['polar-grid-10mm'],
+    relatedQuestions: [
+      { question: 'How is a polar point different from an ordered pair?', answer: 'An ordered pair gives x then y from the origin. A polar point gives distance from the centre, then angle from the horizontal axis.', href: '/guides/how-to-plot-points-on-a-coordinate-plane' },
+    ],
+    updatedAt: '2026-11-01',
+  }),
+  guide({
+    id: 'how-to-draw-isometric-on-grid-paper',
+    title: 'How to Draw Isometric on Grid Paper | FreeGridPaper',
+    description: 'Draw cubes and 3D objects on isometric grid paper using vertical edges and 60 and 120 degree edges, with no vanishing point.',
+    h1: 'How to Draw Isometric on Grid Paper',
+    summary: 'Isometric drawing keeps all three axes at equal scale: vertical edges stay vertical, and the other two edges run along the grid diagonals.',
+    answerSummary: 'Isometric paper is not perspective paper. There is no vanishing point, and lengths along all three axes use the same scale, which is why a cube looks consistent from any part of the page. On this grid, one family of lines is horizontal, and the other two run at 60 and 120 degrees, forming equilateral triangles. Draw vertical edges along the page vertical, then draw the other edges along the two diagonal families.',
+    referenceFacts: [
+      { label: 'Line directions', value: '0, 60, and 120 degrees' },
+      { label: 'Triangle side, default', value: '1/4 inch, 6.35 mm' },
+      { label: 'Vanishing point', value: 'None, unlike perspective drawing' },
+      { label: 'Scale', value: 'Equal along all three axes' },
+      { label: 'Lines vs dots', value: 'Lines guide edges, dots leave edges to the eye' },
+    ],
+    bestFor: ['Cubes, boxes, and 3D sketches', 'Architecture and product sketches', 'Geometry and technical drawing practice'],
+    body: [
+      {
+        heading: 'Draw a cube in three steps',
+        body: 'Start with a vertical edge for the front corner of the cube. From its top and bottom, draw edges along the two diagonal families, one going up and to the right at 60 degrees, the other going down and to the right at 120 degrees, or the mirror of those, depending on which faces you want visible. Close the cube with vertical edges at the far corners, then the remaining diagonal edges. If an edge does not follow a grid family, it is probably a perspective edge sneaking in.',
+        items: ['Count the same number of triangles along each edge for a regular cube.', 'Keep parallel edges parallel: in isometric drawing they never converge.', 'Use the horizontal grid lines as a level check for the top and bottom faces.'],
+      },
+      {
+        heading: 'Lines or dots, which to choose',
+        body: 'Full lines make it easier to keep edges straight and to count triangles, which helps beginners and technical sketches. Dots are lighter on the page and better for free sketching, where you want guidance without a strong grid showing through. Both use the same triangular lattice, so a sketch started on one can be redrawn on the other without rescaling.',
+      },
+      {
+        heading: 'Common mistakes to check',
+        body: 'Drawing one face in perspective, with edges converging, breaks the isometric look even if the rest is correct. Using different lengths for edges that should be equal makes a box look stretched. Starting a cube in the middle of a triangle, instead of on a grid intersection, makes counting harder from the first edge.',
+      },
+      {
+        heading: 'Printing guidance',
+        body: 'Print at Actual Size or 100% scale so the triangle size stays as selected. Increase the triangle size in the generator for larger, more forgiving sketches, and decrease it for denser technical work.',
+      },
+    ],
+    primaryTemplateId: 'isometric-grid',
+    primaryPresetId: 'quarter-inch-isometric-grid',
+    relatedTemplateIds: ['isometric-grid', 'isometric-dots', 'hex-grid'],
+    relatedPresetIds: ['quarter-inch-isometric-grid'],
+    relatedQuestions: [
+      { question: 'What is the difference between isometric grid and isometric dots?', answer: 'Both use the same triangular lattice. Grid paper draws the full lines, dots paper shows only the lattice points, so lines guide edges and dots stay lighter.', href: '/guides/how-to-choose-hex-size-for-dnd-maps' },
+    ],
+    updatedAt: '2026-11-01',
   }),
 ];

@@ -7,11 +7,9 @@ functions = "dist"
 command = "npm run dev"
 port = 5000
 
-[[redirects]]
-from = "/"
-to = "/templates"
-status = 301
-
+# No redirect from / to /templates: / is the generator itself, and
+# /templates remains the library. The SPA fallback below serves the
+# app for client-side routes.
 [[redirects]]
 from = "/*"
 to = "/index.html"

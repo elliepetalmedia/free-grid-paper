@@ -3,6 +3,11 @@ import type { CategoryEntry } from './types';
 const previewImage = '/previews/freegridpaper-preview.svg';
 const socialImage = '/og/freegridpaper-og.svg';
 const updatedAt = '2026-05-22';
+// Only categories whose template or guide lists actually changed in
+// the 2026-11-01 batch: graph, dot and drawing, and writing.
+// Other categories keep the older date.
+const updatedAt20261101 = '2026-11-01';
+const updatedCategories = new Set(['graph-and-grid-paper', 'dot-and-drawing-grids', 'writing-and-handwriting-paper']);
 
 export const categories: CategoryEntry[] = [
   {
@@ -18,9 +23,9 @@ export const categories: CategoryEntry[] = [
     summary: 'Square grid templates for math, engineering, charting, mapping, and large-format planning.',
     previewImage,
     socialImage,
-    templateIds: ['graph-paper', 'engineering', 'poster-size'],
+    templateIds: ['graph-paper', 'coordinate-plane', 'polar-grid', 'engineering', 'poster-size'],
     relatedCategoryIds: ['dot-and-drawing-grids', 'gaming-and-hex-grids', 'writing-and-handwriting-paper'],
-    relatedGuideIds: ['graph-paper-sizes-explained', 'five-mm-vs-quarter-inch-graph-paper', 'best-graph-paper-for-engineering-homework', 'how-to-print-at-actual-size'],
+    relatedGuideIds: ['graph-paper-sizes-explained', 'five-mm-vs-quarter-inch-graph-paper', 'best-graph-paper-for-engineering-homework', 'how-to-print-at-actual-size', 'how-to-plot-points-on-a-coordinate-plane', 'how-to-plot-polar-coordinates'],
     answerSummary: 'Graph and grid paper covers measurement-driven work such as math, engineering, plotting, and poster planning. Start with 5 mm or 1/4 inch spacing for general work, then move larger or smaller based on how much detail the page needs.',
     bestFor: ['Math worksheets and plotting', 'Engineering homework and technical sketches', 'Poster planning and large-format layouts'],
     referenceFacts: [
@@ -53,9 +58,9 @@ export const categories: CategoryEntry[] = [
     summary: 'Lightweight guide patterns for sketching, journaling, wireframes, and 3D drawing.',
     previewImage,
     socialImage,
-    templateIds: ['dot-grid', 'isometric-dots'],
+    templateIds: ['dot-grid', 'isometric-dots', 'isometric-grid'],
     relatedCategoryIds: ['graph-and-grid-paper', 'art-and-storyboarding'],
-    relatedGuideIds: ['best-dot-grid-spacing-for-bullet-journaling', 'a4-vs-letter-dot-grid'],
+    relatedGuideIds: ['best-dot-grid-spacing-for-bullet-journaling', 'a4-vs-letter-dot-grid', 'how-to-draw-isometric-on-grid-paper'],
     answerSummary: 'Dot grids are best when you want guidance without the visual weight of full lines. Most users should start with 5 mm spacing and choose A4 or Letter based on the paper in their printer.',
     bestFor: ['Bullet journals and planners', 'Wireframes and rough layouts', 'Sketching with light page structure'],
     referenceFacts: [
@@ -83,9 +88,9 @@ export const categories: CategoryEntry[] = [
     summary: 'Printable writing guides for schoolwork, lists, practice sheets, and penmanship.',
     previewImage,
     socialImage,
-    templateIds: ['lined-paper', 'checklist', 'handwriting', 'calligraphy', 'genkoyoushi'],
+    templateIds: ['lined-paper', 'cornell-notes', 'checklist', 'handwriting', 'calligraphy', 'genkoyoushi'],
     relatedCategoryIds: ['graph-and-grid-paper', 'craft-and-pattern-paper'],
-    relatedGuideIds: ['handwriting-paper-by-grade-level', 'college-ruled-vs-wide-ruled', 'how-to-print-at-actual-size'],
+    relatedGuideIds: ['handwriting-paper-by-grade-level', 'college-ruled-vs-wide-ruled', 'how-to-print-at-actual-size', 'cornell-note-taking-method'],
     answerSummary: 'Writing and handwriting paper covers everyday ruled sheets, structured learner guides, and specialty writing formats. Choose based on the writer’s skill level and how much room each line needs.',
     bestFor: ['School notes and journaling', 'Early handwriting practice', 'Specialty manuscript and calligraphy work'],
     referenceFacts: [
@@ -203,5 +208,5 @@ export const categories: CategoryEntry[] = [
   },
 ].map((entry) => ({
   ...entry,
-  updatedAt,
+  updatedAt: updatedCategories.has(entry.id) ? updatedAt20261101 : updatedAt,
 })) as CategoryEntry[];

@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-export type PaperType = 'dot-grid' | 'graph-paper' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy' | 'handwriting' | 'guitar-tab' | 'bass-tab' | 'genkoyoushi' | 'perspective-grid' | 'comic-layout' | 'storyboard';
+export type PaperType = 'dot-grid' | 'graph-paper' | 'coordinate-plane' | 'cornell-notes' | 'polar-grid' | 'isometric-grid' | 'lined-paper' | 'music-staff' | 'checklist' | 'isometric-dots' | 'hex-grid' | 'knitting' | 'calligraphy' | 'handwriting' | 'guitar-tab' | 'bass-tab' | 'genkoyoushi' | 'perspective-grid' | 'comic-layout' | 'storyboard';
 
 interface TemplateIconProps {
     type: PaperType;
@@ -27,6 +27,14 @@ export const TemplateIcon: React.FC<TemplateIconProps> = ({ type, className = "w
                     <rect x="0" y="0" width="100" height="100" strokeWidth="8" />
                 </svg>
             );
+        case 'coordinate-plane':
+            return (
+                <svg viewBox="0 0 100 100" className={className} stroke={stroke} strokeWidth="3" fill="none">
+                    <path d="M0 25 H100 M0 75 H100 M25 0 V100 M75 0 V100" opacity="0.5" />
+                    <path d="M0 50 H100 M50 0 V100" strokeWidth="6" />
+                    <path d="M100 50 L92 46 M100 50 L92 54 M0 50 L8 46 M0 50 L8 54 M50 0 L46 8 M50 0 L54 8 M50 100 L46 92 M50 100 L54 92" strokeWidth="4" />
+                </svg>
+            );
         case 'lined-paper':
             return (
                 <svg viewBox="0 0 100 100" className={className} stroke={stroke} strokeWidth="6" fill="none">
@@ -35,6 +43,40 @@ export const TemplateIcon: React.FC<TemplateIconProps> = ({ type, className = "w
                     <line x1="0" y1="60" x2="100" y2="60" />
                     <line x1="0" y1="80" x2="100" y2="80" />
                     <line x1="20" y1="0" x2="20" y2="100" stroke="red" strokeOpacity="0.5" />
+                </svg>
+            );
+        case 'cornell-notes':
+            return (
+                <svg viewBox="0 0 100 100" className={className} stroke={stroke} strokeWidth="3" fill="none">
+                    <line x1="0" y1="12" x2="100" y2="12" />
+                    <line x1="0" y1="24" x2="100" y2="24" opacity="0.5" />
+                    <line x1="0" y1="36" x2="100" y2="36" opacity="0.5" />
+                    <line x1="0" y1="48" x2="100" y2="48" opacity="0.5" />
+                    <line x1="0" y1="60" x2="100" y2="60" opacity="0.5" />
+                    <line x1="30" y1="12" x2="30" y2="76" strokeWidth="5" />
+                    <line x1="0" y1="76" x2="100" y2="76" strokeWidth="5" />
+                    <line x1="0" y1="88" x2="100" y2="88" opacity="0.5" />
+                </svg>
+            );
+        case 'polar-grid':
+            return (
+                <svg viewBox="0 0 100 100" className={className} stroke={stroke} strokeWidth="3" fill="none">
+                    <circle cx="50" cy="50" r="12" />
+                    <circle cx="50" cy="50" r="24" />
+                    <circle cx="50" cy="50" r="36" />
+                    <circle cx="50" cy="50" r="48" />
+                    <line x1="50" y1="2" x2="50" y2="98" strokeWidth="4" />
+                    <line x1="2" y1="50" x2="98" y2="50" strokeWidth="4" />
+                    <line x1="16" y1="16" x2="84" y2="84" opacity="0.6" />
+                    <line x1="84" y1="16" x2="16" y2="84" opacity="0.6" />
+                </svg>
+            );
+        case 'isometric-grid':
+            return (
+                <svg viewBox="0 0 100 100" className={className} stroke={stroke} strokeWidth="3" fill="none">
+                    <path d="M0 25 H100 M0 50 H100 M0 75 H100" />
+                    <path d="M25 0 L75 100 M50 0 L100 100 M0 50 L50 100 M0 0 L25 50" opacity="0.7" />
+                    <path d="M75 0 L25 100 M50 0 L0 100 M100 50 L50 100 M100 0 L75 50" opacity="0.7" />
                 </svg>
             );
         case 'music-staff':

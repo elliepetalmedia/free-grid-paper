@@ -13,7 +13,7 @@ import { AdBanner } from '@/components/layout/AdBanner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { trackEvent } from '@/lib/analytics';
 import { Grid } from 'lucide-react';
-import { getTemplateByPaperType, getTemplateByPath, getTopNavTemplates, templates } from '@/content';
+import { getSitePageByPath, getTemplateByPaperType, getTemplateByPath, getTopNavTemplates, templates } from '@/content';
 import { PAGE_SIZES } from '@/generator/page-sizes';
 import { DEFAULT_SETTINGS } from '@/generator/settings';
 import type { PageSize, PaperType, Settings, Unit } from '@/generator/types';
@@ -94,7 +94,19 @@ export default function Home() {
     const preset = getTemplateByPath(location);
     let baseSettings = DEFAULT_SETTINGS;
 
-    if (!preset) {
+    if (!preset && location === '/') {
+      // Homepage generator: use the generic homepage entry, not the
+      // default dot grid template, so / is not mislabelled as Dot Grid
+      // Paper. Settings still start from DEFAULT_SETTINGS (dot grid),
+      // which the visitor can change, and Download PDF is available
+      // immediately. No preset banner is shown here.
+      const homePage = getSitePageByPath('/');
+      document.title = homePage?.title || 'FreeGridPaper - Free Printable Grid Paper Generator';
+      setPageTitle(homePage?.title || 'FreeGridPaper');
+      setPageH1(homePage?.h1 || 'FreeGridPaper');
+      setQuickDownloadText(null);
+      updateMetaDescription(homePage?.description || "Free printable grid paper generator. Download custom graph paper, dot grid, lined paper, and more in PDF format.");
+    } else if (!preset) {
       const fallbackTemplate = getTemplateByPaperType(DEFAULT_SETTINGS.paperType);
       document.title = fallbackTemplate?.title || 'FreeGridPaper - Free Printable Grid Paper Generator';
       setPageTitle(fallbackTemplate?.title || 'FreeGridPaper');
@@ -255,6 +267,18 @@ export default function Home() {
         break;
       case 'graph-paper':
         drawGraphPaper(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'coordinate-plane':
+        drawCoordinatePlane(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'cornell-notes':
+        drawCornellNotes(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'polar-grid':
+        drawPolarGrid(ctx, pageSize.width, pageSize.height);
+        break;
+      case 'isometric-grid':
+        drawIsometricGrid(ctx, pageSize.width, pageSize.height);
         break;
       case 'lined-paper':
         drawLinedPaper(ctx, pageSize.width, pageSize.height);
@@ -429,6 +453,160 @@ export default function Home() {
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
       ctx.stroke();
+    }
+  };
+
+  const drawCoordinatePlane = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    // Mirror drawCoordinatePlanePDF: centred grid, major lines and
+    // labels every five units, bold axes with arrowheads at both ends.
+    // Canvas coordinates here are in millimetres, so label sizes are
+    // small numbers in the same units as the rulers use.
+    const gridSize = Math.max(1, Math.min(20, settings.gridSize));
+    const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    ctx.strokeStyle = getColorStyle();
+    for (let step = 0; step * gridSize <= Math.max(width, height); step++) {
+      ctx.lineWidth = step % 5 === 0 ? Math.min(2, weight * 1.6) : weight;
+      const right = centerX + step * gridSize;
+      const left = centerX - step * gridSize;
+      const down = centerY + step * gridSize;
+      const up = centerY - step * gridSize;
+      if (right <= width) { ctx.beginPath(); ctx.moveTo(right, 0); ctx.lineTo(right, height); ctx.stroke(); }
+      if (left >= 0) { ctx.beginPath(); ctx.moveTo(left, 0); ctx.lineTo(left, height); ctx.stroke(); }
+      if (down <= height) { ctx.beginPath(); ctx.moveTo(0, down); ctx.lineTo(width, down); ctx.stroke(); }
+      if (up >= 0) { ctx.beginPath(); ctx.moveTo(0, up); ctx.lineTo(width, up); ctx.stroke(); }
+    }
+
+    const arrow = 3;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = Math.max(0.8, weight * 2);
+    ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(width, centerY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, height); ctx.stroke();
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(width, centerY); ctx.lineTo(width - arrow, centerY - arrow / 2); ctx.moveTo(width, centerY); ctx.lineTo(width - arrow, centerY + arrow / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(arrow, centerY - arrow / 2); ctx.moveTo(0, centerY); ctx.lineTo(arrow, centerY + arrow / 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX - arrow / 2, arrow); ctx.moveTo(centerX, 0); ctx.lineTo(centerX + arrow / 2, arrow); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(centerX, height); ctx.lineTo(centerX - arrow / 2, height - arrow); ctx.moveTo(centerX, height); ctx.lineTo(centerX + arrow / 2, height - arrow); ctx.stroke();
+
+    ctx.fillStyle = '#000000';
+    ctx.font = '3px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let step = 5; step * gridSize <= Math.max(width, height); step += 5) {
+      const right = centerX + step * gridSize;
+      const left = centerX - step * gridSize;
+      const down = centerY + step * gridSize;
+      const up = centerY - step * gridSize;
+      if (right < width) ctx.fillText(String(step), right, centerY + 5);
+      if (left > 0) ctx.fillText(String(-step), left, centerY + 5);
+      ctx.textAlign = 'right';
+      if (down < height) ctx.fillText(String(-step), centerX - 2, down);
+      if (up > 0) ctx.fillText(String(step), centerX - 2, up);
+      ctx.textAlign = 'center';
+    }
+    ctx.fillText('0', centerX + 2.5, centerY + 5);
+    ctx.fillText('x', width - 4, centerY + 5);
+    ctx.fillText('y', centerX + 2.5, 4);
+  };
+
+  const drawCornellNotes = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    // Mirror drawCornellNotesPDF: title strip, 30 percent cue column,
+    // notes column, and a seven-line summary section at the bottom.
+    const lineHeight = Math.max(5, Math.min(15, settings.lineHeight));
+    const cueWidth = width * 0.3;
+    const headerHeight = Math.max(12, lineHeight * 1.5);
+    const summaryHeight = lineHeight * 7;
+    const summaryTop = height - summaryHeight;
+
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0, headerHeight); ctx.lineTo(width, headerHeight); ctx.stroke();
+    for (let y = headerHeight + lineHeight; y < summaryTop; y += lineHeight) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+    for (let y = summaryTop + lineHeight; y < height; y += lineHeight) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(cueWidth, headerHeight); ctx.lineTo(cueWidth, summaryTop); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, summaryTop); ctx.lineTo(width, summaryTop); ctx.stroke();
+  };
+
+  const drawPolarGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    // Mirror drawPolarGridPDF: concentric circles, 15 degree spokes,
+    // bold cardinal spokes, and angle labels every 30 degrees.
+    const spacing = Math.max(1, Math.min(20, settings.gridSize));
+    const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const maxRadius = Math.min(width, height) / 2 - 8;
+    const ringCount = Math.floor(maxRadius / spacing);
+
+    ctx.strokeStyle = getColorStyle();
+    for (let ring = 1; ring <= ringCount; ring++) {
+      ctx.lineWidth = ring % 5 === 0 ? Math.min(2, weight * 1.6) : weight;
+      ctx.beginPath(); ctx.arc(centerX, centerY, ring * spacing, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    ctx.strokeStyle = '#000000';
+    for (let angle = 0; angle < 360; angle += 15) {
+      const radians = (angle * Math.PI) / 180;
+      ctx.lineWidth = angle % 90 === 0 ? Math.max(0.8, weight * 2) : weight;
+      ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(centerX + Math.cos(radians) * maxRadius, centerY - Math.sin(radians) * maxRadius); ctx.stroke();
+    }
+    ctx.fillStyle = '#000000';
+    ctx.beginPath(); ctx.arc(centerX, centerY, 0.8, 0, Math.PI * 2); ctx.fill();
+
+    ctx.font = '3px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let angle = 0; angle < 360; angle += 30) {
+      const radians = (angle * Math.PI) / 180;
+      const labelRadius = maxRadius + 4.5;
+      ctx.fillText(`${angle}°`, centerX + Math.cos(radians) * labelRadius, centerY - Math.sin(radians) * labelRadius);
+    }
+  };
+
+  const drawIsometricGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    // Mirror drawIsometricGridPDF, with the same page-edge clipping
+    // for the diagonal families, so no line runs past the page.
+    const side = Math.max(1, Math.min(20, settings.gridSize));
+    const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
+    const rowHeight = side * Math.sqrt(3) / 2;
+    const interceptStep = side * Math.sqrt(3);
+    const slope = Math.sqrt(3);
+    const segment = (m: number, b: number): [number, number, number, number] | null => {
+      const points: [number, number][] = [];
+      const add = (x: number, y: number) => {
+        if (x >= -0.01 && x <= width + 0.01 && y >= -0.01 && y <= height + 0.01) {
+          const clamped: [number, number] = [Math.max(0, Math.min(width, x)), Math.max(0, Math.min(height, y))];
+          if (!points.some(([px, py]) => Math.abs(px - clamped[0]) < 0.01 && Math.abs(py - clamped[1]) < 0.01)) points.push(clamped);
+        }
+      };
+      add(0, b);
+      add(width, m * width + b);
+      add(-b / m, 0);
+      add((height - b) / m, height);
+      if (points.length < 2) return null;
+      return [points[0][0], points[0][1], points[1][0], points[1][1]];
+    };
+
+    ctx.strokeStyle = getColorStyle();
+    ctx.lineWidth = weight;
+    for (let y = 0; y <= height; y += rowHeight) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+    for (let b = -slope * width; b <= height; b += interceptStep) {
+      const s = segment(slope, b);
+      if (s) { ctx.beginPath(); ctx.moveTo(s[0], s[1]); ctx.lineTo(s[2], s[3]); ctx.stroke(); }
+    }
+    for (let b = 0; b <= height + slope * width; b += interceptStep) {
+      const s = segment(-slope, b);
+      if (s) { ctx.beginPath(); ctx.moveTo(s[0], s[1]); ctx.lineTo(s[2], s[3]); ctx.stroke(); }
     }
   };
 
@@ -1063,7 +1241,14 @@ export default function Home() {
           <div className="w-px h-6 bg-border mx-1 hidden md:block" />
 
           <span className="text-xs text-muted-foreground whitespace-nowrap hidden lg:inline">Quick Access:</span>
-          <div className="flex items-center gap-1 md:gap-2 overflow-x-auto scrollbar-hide flex-1 mask-linear-fade">
+          {/*
+            Wrap instead of scrolling horizontally. The old strip used
+            overflow-x-auto with undefined scrollbar-hide and
+            mask-linear-fade classes, so on desktop the last item
+            (Storyboard) was cut off with no visible sign that more
+            items existed. Wrapping shows every Quick Access template.
+          */}
+          <div className="flex flex-wrap items-center gap-1 md:gap-2 flex-1 min-w-0">
             {TOP_NAV_PRESETS.map((preset) => (
               <Link key={preset.route} href={preset.route}>
                 <Button
@@ -1081,7 +1266,13 @@ export default function Home() {
       </nav>
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-4 md:p-6 md:h-[calc(100vh-48px)] md:overflow-y-auto flex-shrink-0">
+        {/*
+          Fill the content area instead of assuming a 48px nav height.
+          That assumption broke once Quick Access wraps and the nav
+          grows taller, which would have cut off the bottom of the
+          control panel, including Download PDF.
+        */}
+        <aside className="w-full md:w-80 bg-sidebar border-r border-sidebar-border p-4 md:p-6 md:h-full md:overflow-y-auto flex-shrink-0">
           <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -1118,8 +1309,12 @@ export default function Home() {
                     <SelectItem value="dot-grid" data-testid="option-dot-grid">Dot Grid</SelectItem>
                     <SelectItem value="isometric-dots" data-testid="option-isometric-dots">Isometric Dots</SelectItem>
                     <SelectItem value="graph-paper" data-testid="option-graph-paper">Graph Paper</SelectItem>
+                    <SelectItem value="coordinate-plane" data-testid="option-coordinate-plane">Coordinate Plane</SelectItem>
+                    <SelectItem value="polar-grid" data-testid="option-polar-grid">Polar Grid</SelectItem>
+                    <SelectItem value="isometric-grid" data-testid="option-isometric-grid">Isometric Grid</SelectItem>
                     <SelectItem value="hex-grid" data-testid="option-hex-grid">Hexagon Grid (D&D)</SelectItem>
                     <SelectItem value="lined-paper" data-testid="option-lined-paper">Lined Paper</SelectItem>
+                    <SelectItem value="cornell-notes" data-testid="option-cornell-notes">Cornell Notes</SelectItem>
                     <SelectItem value="music-staff" data-testid="option-music-staff">Music Staff</SelectItem>
                     <SelectItem value="checklist" data-testid="option-checklist">Checklist</SelectItem>
                     <SelectItem value="knitting" data-testid="option-knitting">Knitting/Cross-Stitch</SelectItem>
@@ -1486,6 +1681,300 @@ export default function Home() {
                         className="flex-1"
                         placeholder="#000000"
                         data-testid="input-grid-color-hex"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.paperType === 'coordinate-plane' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Four-quadrant plane for plotting points and graphing equations. Axes are centred, with bold lines, arrowheads, and labels every five units. One square is one unit.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Grid Size (mm)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('gridSize', Math.max(1, settings.gridSize - 0.5))}
+                        data-testid="button-coordinate-grid-size-minus"
+                      >
+                        −
+                      </Button>
+                      <span className="flex-1 text-center text-number" data-testid="text-coordinate-grid-size">
+                        {settings.gridSize}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('gridSize', Math.min(20, settings.gridSize + 0.5))}
+                        data-testid="button-coordinate-grid-size-plus"
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Line Weight</Label>
+                      <span className="text-number text-muted-foreground" data-testid="text-coordinate-line-weight">
+                        {settings.lineWeight}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.lineWeight]}
+                      onValueChange={([value]) => updateSetting('lineWeight', value)}
+                      min={0.1}
+                      max={2}
+                      step={0.1}
+                      data-testid="slider-coordinate-line-weight"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="coordinate-grid-color" className="text-sm">
+                      Grid Color
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={settings.useCustomColor ? 'custom' : settings.gridColor}
+                        onValueChange={(value) => {
+                          if (value === 'custom') {
+                            updateSetting('useCustomColor', true);
+                          } else {
+                            updateSetting('useCustomColor', false);
+                            updateSetting('gridColor', value as 'cyan' | 'gray' | 'black');
+                          }
+                        }}
+                      >
+                        <SelectTrigger id="coordinate-grid-color" className="h-10" data-testid="select-coordinate-grid-color">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cyan" data-testid="option-coordinate-color-cyan">Cyan</SelectItem>
+                          <SelectItem value="gray" data-testid="option-coordinate-color-gray">Gray</SelectItem>
+                          <SelectItem value="black" data-testid="option-coordinate-color-black">Black</SelectItem>
+                          <SelectItem value="custom" data-testid="option-coordinate-color-custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-coordinate-grid-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-coordinate-grid-color-hex"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.paperType === 'polar-grid' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Polar grid for angles, circles, and polar plots. Concentric circles are spaced by the grid size, spokes run every 15 degrees, cardinal spokes are bold, and angle labels every 30 degrees sit just outside the outer circle.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Ring Spacing (mm)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('gridSize', Math.max(1, settings.gridSize - 0.5))}
+                        data-testid="button-polar-grid-size-minus"
+                      >
+                        −
+                      </Button>
+                      <span className="flex-1 text-center text-number" data-testid="text-polar-grid-size">
+                        {settings.gridSize}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('gridSize', Math.min(20, settings.gridSize + 0.5))}
+                        data-testid="button-polar-grid-size-plus"
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Line Weight</Label>
+                      <span className="text-number text-muted-foreground" data-testid="text-polar-line-weight">
+                        {settings.lineWeight}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.lineWeight]}
+                      onValueChange={([value]) => updateSetting('lineWeight', value)}
+                      min={0.1}
+                      max={2}
+                      step={0.1}
+                      data-testid="slider-polar-line-weight"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="polar-grid-color" className="text-sm">
+                      Grid Color
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={settings.useCustomColor ? 'custom' : settings.gridColor}
+                        onValueChange={(value) => {
+                          if (value === 'custom') {
+                            updateSetting('useCustomColor', true);
+                          } else {
+                            updateSetting('useCustomColor', false);
+                            updateSetting('gridColor', value as 'cyan' | 'gray' | 'black');
+                          }
+                        }}
+                      >
+                        <SelectTrigger id="polar-grid-color" className="h-10" data-testid="select-polar-grid-color">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cyan" data-testid="option-polar-color-cyan">Cyan</SelectItem>
+                          <SelectItem value="gray" data-testid="option-polar-color-gray">Gray</SelectItem>
+                          <SelectItem value="black" data-testid="option-polar-color-black">Black</SelectItem>
+                          <SelectItem value="custom" data-testid="option-polar-color-custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-polar-grid-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-polar-grid-color-hex"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.paperType === 'isometric-grid' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Full isometric lines, not dots, for 3D sketching. Three sets of lines at 0, 60, and 120 degrees form equilateral triangles. This is the line version of the isometric dots paper.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Triangle Size (mm)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('gridSize', Math.max(1, settings.gridSize - 0.5))}
+                        data-testid="button-isometric-grid-size-minus"
+                      >
+                        −
+                      </Button>
+                      <span className="flex-1 text-center text-number" data-testid="text-isometric-grid-size">
+                        {settings.gridSize}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateSetting('gridSize', Math.min(20, settings.gridSize + 0.5))}
+                        data-testid="button-isometric-grid-size-plus"
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-sm">Line Weight</Label>
+                      <span className="text-number text-muted-foreground" data-testid="text-isometric-line-weight">
+                        {settings.lineWeight}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.lineWeight]}
+                      onValueChange={([value]) => updateSetting('lineWeight', value)}
+                      min={0.1}
+                      max={2}
+                      step={0.1}
+                      data-testid="slider-isometric-line-weight"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="isometric-grid-color" className="text-sm">
+                      Grid Color
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={settings.useCustomColor ? 'custom' : settings.gridColor}
+                        onValueChange={(value) => {
+                          if (value === 'custom') {
+                            updateSetting('useCustomColor', true);
+                          } else {
+                            updateSetting('useCustomColor', false);
+                            updateSetting('gridColor', value as 'cyan' | 'gray' | 'black');
+                          }
+                        }}
+                      >
+                        <SelectTrigger id="isometric-grid-color" className="h-10" data-testid="select-isometric-grid-color">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cyan" data-testid="option-isometric-color-cyan">Cyan</SelectItem>
+                          <SelectItem value="gray" data-testid="option-isometric-color-gray">Gray</SelectItem>
+                          <SelectItem value="black" data-testid="option-isometric-color-black">Black</SelectItem>
+                          <SelectItem value="custom" data-testid="option-isometric-color-custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {settings.useCustomColor && (
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="w-12 h-10 rounded cursor-pointer"
+                        data-testid="input-isometric-grid-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.customColor}
+                        onChange={(e) => updateSetting('customColor', e.target.value)}
+                        className="flex-1"
+                        placeholder="#000000"
+                        data-testid="input-isometric-grid-color-hex"
                       />
                     </div>
                   )}
@@ -2109,6 +2598,35 @@ export default function Home() {
                 </div>
               )}
 
+              {settings.paperType === 'cornell-notes' && (
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
+                    Cornell notes for lectures and revision. The left column, about 30 percent of the width, is for cues and questions, the right column is for notes, and the bottom section, seven lines tall, is for a summary after you review.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Line Height</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={settings.lineHeight === 7.1 ? 'default' : 'outline'}
+                        onClick={() => updateSetting('lineHeight', 7.1)}
+                        className="flex-1"
+                        data-testid="button-cornell-college-ruled"
+                      >
+                        College (7.1mm)
+                      </Button>
+                      <Button
+                        variant={settings.lineHeight === 8.7 ? 'default' : 'outline'}
+                        onClick={() => updateSetting('lineHeight', 8.7)}
+                        className="flex-1"
+                        data-testid="button-cornell-wide-ruled"
+                      >
+                        Wide (8.7mm)
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {settings.paperType === 'lined-paper' && (
                 <div className="space-y-4 pt-2">
                   <p className="text-sm text-muted-foreground bg-sidebar-accent/50 p-3 rounded">
@@ -2278,12 +2796,13 @@ export default function Home() {
                   Ready to download: {quickDownloadText}
                 </span>
               </div>
+              {/*
+                Deliberately no download button here. The banner only
+                confirms which preset was loaded. The Download PDF button
+                in the control panel is the single download action.
+              */}
               <div className="flex items-center gap-2">
-                <Button onClick={() => downloadPDF()} disabled={isDownloading} size="sm" data-testid="button-quick-download">
-                  <Download className="w-4 h-4 mr-2" />
-                  {isDownloading ? 'Preparing...' : 'Download Now'}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={dismissQuickDownload} data-testid="button-dismiss-banner">
+                <Button variant="ghost" size="icon" onClick={dismissQuickDownload} data-testid="button-dismiss-banner" aria-label="Dismiss preset banner">
                   <X className="w-4 h-4" />
                 </Button>
               </div>

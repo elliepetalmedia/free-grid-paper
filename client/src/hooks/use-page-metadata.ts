@@ -37,7 +37,11 @@ export function usePageMetadata(entry: TrackableEntry) {
     ensureMeta('description').setAttribute('content', entry.description);
 
     if (entry.canonicalPath) {
-      ensureCanonicalLink().setAttribute('href', entry.canonicalPath);
+      // Canonical must be absolute, not a relative path, and it must
+      // match the prerendered canonical, which now carries a trailing
+      // slash. Using the page origin keeps this correct on live and on
+      // preview hosts, instead of hardcoding the production domain.
+      ensureCanonicalLink().setAttribute('href', `${window.location.origin}${entry.canonicalPath}`);
     }
 
     if (entry.path) {
