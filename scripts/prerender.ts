@@ -25,9 +25,13 @@ import {
   type TemplateEntry,
 } from '../client/src/content/index';
 
+import { PRODUCTION_ORIGIN } from '../client/src/lib/canonical';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.resolve(__dirname, '../dist/public');
-const domain = 'https://freegridpaper.com';
+// Prerender and client canonicals share this one production origin,
+// so a preview host can never drift into a prerendered canonical.
+const domain = PRODUCTION_ORIGIN;
 
 function escapeHtml(value: string) {
   return value
@@ -59,11 +63,20 @@ function renderFacts(facts?: ReferenceFact[]) {
   return `<section><h2>Reference facts</h2><dl>${rows}</dl></section>`;
 }
 
+function canonicalHref(href: string) {
+  // Search-facing links in prerendered output point at the canonical
+  // URL, which carries a trailing slash. Internal hrefs in content are
+  // written slash free, so normalise them here, leaving the root and
+  // any absolute URL untouched.
+  if (!href.startsWith('/') || href.startsWith('//')) return href;
+  return href === '/' || href.endsWith('/') ? href : `${href}/`;
+}
+
 function renderQuestions(questions?: FaqEntry[]) {
   if (!questions?.length) return '';
   const entries = questions
     .map((entry) => {
-      const link = entry.href ? `<p><a href="${entry.href}">Open related page</a></p>` : '';
+      const link = entry.href ? `<p><a href="${canonicalHref(entry.href)}">Open related page</a></p>` : '';
       return `<article><h3>${escapeHtml(entry.question)}</h3><p>${escapeHtml(entry.answer)}</p>${link}</article>`;
     })
     .join('');
@@ -85,21 +98,21 @@ function relatedTemplateLinks(ids: string[]) {
   return ids
     .map(getTemplateById)
     .filter(Boolean)
-    .map((entry) => ({ href: entry!.path, label: entry!.label }));
+    .map((entry) => ({ href: entry!.canonicalPath, label: entry!.label }));
 }
 
 function relatedPresetLinks(ids: string[]) {
   return ids
     .map(getPresetBySlug)
     .filter(Boolean)
-    .map((entry) => ({ href: entry!.path, label: entry!.label }));
+    .map((entry) => ({ href: entry!.canonicalPath, label: entry!.label }));
 }
 
 function relatedGuideLinks(ids: string[]) {
   return ids
     .map(getGuideBySlug)
     .filter(Boolean)
-    .map((entry) => ({ href: entry!.path, label: entry!.h1 }));
+    .map((entry) => ({ href: entry!.canonicalPath, label: entry!.h1 }));
 }
 
 function routeSpecificBody(entry: IndexableEntry) {
@@ -112,16 +125,16 @@ function routeSpecificBody(entry: IndexableEntry) {
 
   if (entry.path === '/templates') {
     related += renderLinkList(
-      categories.map((category) => ({ href: category.path, label: category.h1 })),
+      categories.map((category) => ({ href: category.canonicalPath, label: category.h1 })),
       'Template categories',
     );
     related += renderLinkList(
-      guides.slice(0, 10).map((guide) => ({ href: guide.path, label: guide.h1 })),
+      guides.slice(0, 10).map((guide) => ({ href: guide.canonicalPath, label: guide.h1 })),
       'Popular guides',
     );
   } else if (entry.kind === 'category') {
     related += renderLinkList(
-      entry.templateIds.map((id) => getTemplateById(id)).filter(Boolean).map((template) => ({ href: template!.path, label: template!.label })),
+      entry.templateIds.map((id) => getTemplateById(id)).filter(Boolean).map((template) => ({ href: template!.canonicalPath, label: template!.label })),
       'Templates in this category',
     );
     related += renderLinkList(relatedGuideLinks(entry.relatedGuideIds), 'Guides for this category');
@@ -132,8 +145,8 @@ function routeSpecificBody(entry: IndexableEntry) {
     const template = getTemplateById(entry.templateId);
     const category = getCategoryById(entry.categoryId);
     const parentLinks = [
-      template ? { href: template.path, label: template.label } : null,
-      category ? { href: category.path, label: category.h1 } : null,
+      template ? { href: template.canonicalPath, label: template.label } : null,
+      category ? { href: category.canonicalPath, label: category.h1 } : null,
     ].filter(Boolean) as Array<{ href: string; label: string }>;
     related += renderLinkList(parentLinks, 'Start here');
     related += renderLinkList(relatedGuideLinks(entry.relatedGuideIds), 'Related guides');
@@ -145,7 +158,7 @@ function routeSpecificBody(entry: IndexableEntry) {
     ]
       .filter(Boolean)
       .map((item) => ({
-        href: item!.path,
+        href: item!.canonicalPath,
         label: 'label' in item! ? item!.label : item!.h1,
       }));
     related += renderLinkList(primaryLinks, 'Best starting pages');
@@ -153,7 +166,7 @@ function routeSpecificBody(entry: IndexableEntry) {
     related += renderLinkList(relatedPresetLinks(entry.relatedPresetIds), 'Related presets');
   } else if (entry.kind === 'site') {
     related += renderLinkList(
-      categories.map((category) => ({ href: category.path, label: category.h1 })),
+      categories.map((category) => ({ href: category.canonicalPath, label: category.h1 })),
       'Browse by category',
     );
   }
@@ -180,24 +193,24 @@ function routeSpecificBody(entry: IndexableEntry) {
 }
 
 function breadcrumbsFor(entry: IndexableEntry) {
-  const crumbs = [{ name: 'Templates', item: absoluteUrl('/templates') }];
+  const crumbs = [{ name: 'Templates', item: absoluteUrl('/templates/') }];
 
   if (entry.path === '/' || entry.path === '/templates') return crumbs;
 
   if (entry.kind === 'template') {
     const category = getCategoryById(entry.categoryId);
-    if (category) crumbs.push({ name: category.h1, item: absoluteUrl(category.path) });
-    crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
+    if (category) crumbs.push({ name: category.h1, item: absoluteUrl(category.canonicalPath) });
+    crumbs.push({ name: entry.h1, item: absoluteUrl(entry.canonicalPath) });
   } else if (entry.kind === 'category') {
-    crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
+    crumbs.push({ name: entry.h1, item: absoluteUrl(entry.canonicalPath) });
   } else if (entry.kind === 'preset') {
     const category = getCategoryById(entry.categoryId);
     const template = getTemplateById(entry.templateId);
-    if (category) crumbs.push({ name: category.h1, item: absoluteUrl(category.path) });
-    if (template) crumbs.push({ name: template.label, item: absoluteUrl(template.path) });
-    crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
+    if (category) crumbs.push({ name: category.h1, item: absoluteUrl(category.canonicalPath) });
+    if (template) crumbs.push({ name: template.label, item: absoluteUrl(template.canonicalPath) });
+    crumbs.push({ name: entry.h1, item: absoluteUrl(entry.canonicalPath) });
   } else {
-    crumbs.push({ name: entry.h1, item: absoluteUrl(entry.path) });
+    crumbs.push({ name: entry.h1, item: absoluteUrl(entry.canonicalPath) });
   }
 
   return crumbs;
@@ -329,7 +342,7 @@ function schemaFor(entry: IndexableEntry) {
         return {
           '@type': 'ListItem',
           position: index + 1,
-          url: absoluteUrl(template?.path ?? '/templates'),
+          url: absoluteUrl(template?.canonicalPath ?? '/templates/'),
           name: template?.label ?? id,
         };
       }),
@@ -376,7 +389,7 @@ function buildTemplateSpecExport() {
     templates: templates.map((entry) => ({
       id: entry.id,
       label: entry.label,
-      path: absoluteUrl(entry.path),
+      path: absoluteUrl(entry.canonicalPath),
       categoryId: entry.categoryId,
       title: entry.title,
       summary: entry.summary,
@@ -389,7 +402,7 @@ function buildTemplateSpecExport() {
     presets: presets.map((entry) => ({
       id: entry.id,
       label: entry.label,
-      path: absoluteUrl(entry.path),
+      path: absoluteUrl(entry.canonicalPath),
       templateId: entry.templateId,
       categoryId: entry.categoryId,
       summary: entry.summary,
@@ -400,7 +413,7 @@ function buildTemplateSpecExport() {
     guides: guides.map((entry) => ({
       id: entry.id,
       title: entry.h1,
-      path: absoluteUrl(entry.path),
+      path: absoluteUrl(entry.canonicalPath),
       summary: entry.summary,
       answerSummary: entry.answerSummary,
       relatedTemplateIds: entry.relatedTemplateIds,
@@ -437,15 +450,15 @@ function buildLlmsTxt() {
     '> FreeGridPaper is a printable-paper generator and reference site for graph paper, dot grids, ruled paper, music paper, hex maps, storyboards, and specialty stationery.',
     '',
     '## Canonical starting pages',
-    `- Templates: ${absoluteUrl('/templates')}`,
-    `- FAQ: ${absoluteUrl('/faq')}`,
-    `- About: ${absoluteUrl('/about')}`,
+    `- Templates: ${absoluteUrl('/templates/')}`,
+    `- FAQ: ${absoluteUrl('/faq/')}`,
+    `- About: ${absoluteUrl('/about/')}`,
     '',
     '## High-value guides',
-    ...topGuides.map((guide) => `- ${guide.h1}: ${absoluteUrl(guide.path)}`),
+    ...topGuides.map((guide) => `- ${guide.h1}: ${absoluteUrl(guide.canonicalPath)}`),
     '',
     '## Stable presets',
-    ...topPresets.map((preset) => `- ${preset.label}: ${absoluteUrl(preset.path)}`),
+    ...topPresets.map((preset) => `- ${preset.label}: ${absoluteUrl(preset.canonicalPath)}`),
     '',
     '## Data',
     `- Template specs JSON: ${absoluteUrl('/data/template-specs.json')}`,
@@ -463,19 +476,19 @@ function buildLlmsFullTxt() {
     '',
     '## Categories',
     ...categories.flatMap((category) => [
-      `- ${category.h1}: ${absoluteUrl(category.path)}`,
+      `- ${category.h1}: ${absoluteUrl(category.canonicalPath)}`,
       `  Summary: ${category.summary}`,
     ]),
     '',
     '## Templates',
     ...templates.flatMap((template) => [
-      `- ${template.label}: ${absoluteUrl(template.path)}`,
+      `- ${template.label}: ${absoluteUrl(template.canonicalPath)}`,
       `  Summary: ${template.summary}`,
     ]),
     '',
     '## Guides',
     ...guides.flatMap((guide) => [
-      `- ${guide.h1}: ${absoluteUrl(guide.path)}`,
+      `- ${guide.h1}: ${absoluteUrl(guide.canonicalPath)}`,
       `  Answer: ${guide.answerSummary ?? guide.summary}`,
     ]),
   ];

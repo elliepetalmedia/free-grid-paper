@@ -22,17 +22,19 @@ export default function TemplatesPage() {
       <section className="max-w-3xl">
         <h1 className="text-4xl font-bold text-primary">{page.h1}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{page.summary}</p>
-        <EntryContent
-          answerSummary={page.answerSummary}
-          bestFor={page.bestFor}
-          body={page.body}
-          referenceFacts={page.referenceFacts}
-          relatedQuestions={page.relatedQuestions}
-          updatedAt={page.updatedAt}
-        />
       </section>
 
-      <div className="mt-10 space-y-12">
+      {/*
+        Gallery first, intro text second. Previously the Quick answer,
+        reference facts, Best for, body sections, and related questions
+        all sat above the gallery, so a visitor had to scroll a long way
+        to reach an actual template. Nothing is removed here: the same
+        EntryContent block is rendered below the gallery, so the page
+        still carries all of its reference text for readers who scroll.
+        The prerender script is untouched, so search-facing text is
+        unchanged; only the live page order changes.
+      */}
+      <div className="mt-8 space-y-12">
         {categories.map((category) => {
           const categoryTemplates = getTemplatesForCategory(category.id);
           return (
@@ -61,6 +63,17 @@ export default function TemplatesPage() {
           );
         })}
       </div>
+
+      <section className="mt-12 max-w-3xl">
+        <EntryContent
+          answerSummary={page.answerSummary}
+          bestFor={page.bestFor}
+          body={page.body}
+          referenceFacts={page.referenceFacts}
+          relatedQuestions={page.relatedQuestions}
+          updatedAt={page.updatedAt}
+        />
+      </section>
 
       {featuredGuides.length > 0 && (
         <section className="mt-12">

@@ -12,6 +12,12 @@ const preset = (
   description: string,
   h1: string,
   summary: string,
+  overrides?: {
+    updatedAt?: string;
+    useCases?: string[];
+    printTips?: string[];
+    bestFor?: string[];
+  },
 ): PresetEntry => ({
   kind: 'preset',
   id,
@@ -28,12 +34,12 @@ const preset = (
   h1,
   summary,
   answerSummary: `${label} is a stable preset page that opens the generator with proven settings for this paper format.`,
-  updatedAt,
+  updatedAt: overrides?.updatedAt ?? updatedAt,
   previewImage: `/previews/presets/${id}.svg`,
   socialImage: `/og/${id}.svg`,
-  bestFor: ['Quick printing from a canonical preset page', 'Reusable classroom or home downloads', 'Users who want a known measurement without manual setup'],
-  useCases: ['Fast printing with proven settings', 'Classroom and home use', 'Reusable stationery downloads'],
-  printTips: ['Print at Actual Size or 100% scale.', 'Disable Fit to Page when exact measurements matter.'],
+  bestFor: overrides?.bestFor ?? ['Quick printing from a canonical preset page', 'Reusable classroom or home downloads', 'Users who want a known measurement without manual setup'],
+  useCases: overrides?.useCases ?? ['Fast printing with proven settings', 'Classroom and home use', 'Reusable stationery downloads'],
+  printTips: overrides?.printTips ?? ['Print at Actual Size or 100% scale.', 'Disable Fit to Page when exact measurements matter.'],
   relatedPresetIds: [],
   relatedGuideIds: ['how-to-print-at-actual-size'],
   relatedQuestions: [
@@ -60,6 +66,10 @@ export const presets: PresetEntry[] = [
   preset('blank-bass-tab-paper', 'Blank Bass Tab Paper', 'bass-tab', 'music-paper', { paperType: 'bass-tab', pageSize: 'Letter' }, 'Blank Bass Tab Paper PDF | FreeGridPaper', 'Print blank bass tablature paper with four-line staves.', 'Blank Bass Tab Paper', 'A focused four-line tab format for bass parts and practice notes.'),
   preset('blank-sheet-music-10-staves', 'Blank Sheet Music - 10 Staves', 'music-staff', 'music-paper', { paperType: 'music-staff', pageSize: 'A4', stavesPerPage: 10 }, 'Blank Sheet Music with 10 Staves | FreeGridPaper', 'Print blank sheet music with 10 staves per page.', 'Blank Sheet Music - 10 Staves', 'A balanced staff-paper layout for composition, theory, and transcription.'),
   preset('16-9-storyboard-template', '16:9 Storyboard Template', 'storyboard', 'art-and-storyboarding', { paperType: 'storyboard', pageSize: 'Letter', storyboardCols: 3, storyboardRows: 2 }, '16:9 Storyboard Template PDF | FreeGridPaper', 'Print storyboard paper with 16:9 frames and note space.', '16:9 Storyboard Template', 'A production-friendly storyboard layout for video, film, animation, and ads.'),
+  preset('quarter-inch-coordinate-plane', '1/4 Inch Coordinate Plane', 'coordinate-plane', 'graph-and-grid-paper', { paperType: 'coordinate-plane', pageSize: 'Letter', gridSize: 6.35 }, 'Quarter Inch Coordinate Plane PDF | FreeGridPaper', 'Print a four-quadrant coordinate plane with 1/4 inch squares, bold axes, and numbers every five units on Letter paper.', 'Quarter Inch Coordinate Plane', 'A familiar classroom coordinate plane for plotting points, graphing lines, and algebra homework.', { updatedAt: '2026-11-01', useCases: ['Plotting ordered pairs for algebra homework', 'Graphing lines, slope, and intercepts', 'Classroom worksheets with numbered axes'], printTips: ['Print at Actual Size or 100% scale so one square stays one unit.', 'Count from the origin, and use the bold lines as five unit checkpoints.'] }),
+  preset('college-cornell-notes', 'College Cornell Notes', 'cornell-notes', 'writing-and-handwriting-paper', { paperType: 'cornell-notes', pageSize: 'Letter', lineHeight: 7.1 }, 'College Cornell Notes Paper PDF | FreeGridPaper', 'Print Cornell notes paper with college ruled spacing, a cue column, and a summary section on Letter paper.', 'College Cornell Notes', 'A compact Cornell layout for lectures, reading notes, and revision, with more lines per page.', { updatedAt: '2026-11-01', useCases: ['Lecture notes with cues added after class', 'Textbook notes summarised after review', 'Revision by reciting from the cue column'], printTips: ['Print at Actual Size or 100% scale.', 'Write the summary after review, not during the lecture.'] }),
+  preset('polar-grid-10mm', 'Polar Grid 10 mm', 'polar-grid', 'graph-and-grid-paper', { paperType: 'polar-grid', pageSize: 'Letter', gridSize: 10 }, 'Polar Grid Paper 10 mm PDF | FreeGridPaper', 'Print polar grid paper with 10 mm rings, 15 degree spokes, and angle labels on Letter paper.', 'Polar Grid 10 mm', 'A clear polar grid for polar plots, trigonometry, and circular charts, with nine rings on Letter paper.', { updatedAt: '2026-11-01', useCases: ['Plotting polar coordinates and polar equations', 'Trigonometry and angle worksheets', 'Circular charts and compass work'], printTips: ['Print at Actual Size or 100% scale so ring spacing stays 10 mm.', 'Count rings from the centre, and read angles from the labelled spokes.'] }),
+  preset('quarter-inch-isometric-grid', '1/4 Inch Isometric Grid', 'isometric-grid', 'dot-and-drawing-grids', { paperType: 'isometric-grid', pageSize: 'Letter', gridSize: 6.35 }, 'Quarter Inch Isometric Grid PDF | FreeGridPaper', 'Print isometric grid paper with 1/4 inch triangle sides and full lines at 0, 60, and 120 degrees on Letter paper.', 'Quarter Inch Isometric Grid', 'A precise isometric line grid for 3D sketches, architecture, and technical drawing.', { updatedAt: '2026-11-01', useCases: ['Drawing cubes and 3D objects', 'Architecture and product sketches', 'Geometry and technical drawing practice'], printTips: ['Print at Actual Size or 100% scale so the triangle side stays 1/4 inch.', 'Keep parallel edges parallel along the grid families.'] }),
 ].map((entry, _index, all) => ({
   ...entry,
   relatedPresetIds: all

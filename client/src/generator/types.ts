@@ -1,6 +1,10 @@
 export type PaperType =
   | 'dot-grid'
   | 'graph-paper'
+  | 'coordinate-plane'
+  | 'cornell-notes'
+  | 'polar-grid'
+  | 'isometric-grid'
   | 'lined-paper'
   | 'music-staff'
   | 'checklist'

@@ -4,6 +4,11 @@ import { templates } from './templates';
 const previewImage = '/previews/freegridpaper-preview.svg';
 const socialImage = '/og/freegridpaper-og.svg';
 const updatedAt = '2026-05-22';
+// Only for pages actually changed in the 2026-11-01 batch: / became the
+// generator, and /templates moved its gallery above the intro text.
+// Other site pages keep the older date; do not bump them without a
+// real change to that page.
+const updatedAt20261101 = '2026-11-01';
 
 export const sitePages: SitePageEntry[] = [
   {
@@ -11,14 +16,16 @@ export const sitePages: SitePageEntry[] = [
     id: 'home',
     slug: '',
     path: '/',
-    canonicalPath: '/templates',
-    indexable: false,
+    // Root is the generator itself, with its own canonical URL. It is
+    // no longer a redirect to /templates, which remains the library.
+    canonicalPath: '/',
+    indexable: true,
     title: 'FreeGridPaper - Free Printable Grid Paper Generator',
     description: 'Generate custom printable grid paper, dot grids, lined paper, music staves, and specialty stationery instantly as vector PDFs.',
     h1: 'FreeGridPaper',
     summary: 'Create print-ready stationery PDFs directly in your browser.',
     answerSummary: 'FreeGridPaper is a printable-paper generator and reference library for graph paper, dot grid, ruled paper, music paper, hex maps, storyboards, and other specialty layouts.',
-    updatedAt,
+    updatedAt: updatedAt20261101,
     previewImage,
     socialImage,
     body: [
@@ -40,7 +47,7 @@ export const sitePages: SitePageEntry[] = [
     h1: 'Printable Paper Templates',
     summary: 'Browse every printable paper generator by category.',
     answerSummary: 'FreeGridPaper organizes printable paper by use case so users can reach a canonical template or preset page quickly instead of relying on query-string generator states.',
-    updatedAt,
+    updatedAt: updatedAt20261101,
     previewImage,
     socialImage,
     bestFor: ['Finding the right printable paper type quickly', 'Starting from a known preset', 'Exploring related guides and comparison pages'],

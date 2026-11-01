@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,16 +13,6 @@ import GuidePage from "@/pages/guide";
 import SitePage from "@/pages/site-page";
 import { templates } from "@/content";
 
-function RootRedirect() {
-  const [, navigate] = useLocation();
-
-  useEffect(() => {
-    navigate("/templates", { replace: true });
-  }, [navigate]);
-
-  return null;
-}
-
 function Router() {
   const templateRoutes = templates.map((template) => (
     <Route key={template.path} path={template.path} component={Home} />
@@ -31,7 +20,10 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={RootRedirect} />
+      {/* Root is the generator itself, not a redirect to the library.
+          /templates remains the browsable library, linked from the
+          generator nav and footer. */}
+      <Route path="/" component={Home} />
       {templateRoutes}
       <Route path="/templates" component={TemplatesPage} />
       <Route path="/category/:slug" component={CategoryPage} />

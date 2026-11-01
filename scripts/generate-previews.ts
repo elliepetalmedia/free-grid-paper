@@ -100,12 +100,20 @@ function patternFor(type: PaperType, settings: TemplateSettings, w: number, h: n
       return dots(w, h);
     case "isometric-dots":
       return dots(w, h, true);
+    case "isometric-grid":
+      return `<g>${lines(9, false, h, w)}${Array.from({ length: 14 }, (_, i) => `<path d="M${-100 + i * 62} ${h}L${260 + i * 62} 0" stroke="#38bdf8" stroke-opacity="0.42" stroke-width="2"/>`).join("")}${Array.from({ length: 14 }, (_, i) => `<path d="M${-100 + i * 62} 0L${260 + i * 62} ${h}" stroke="#38bdf8" stroke-opacity="0.42" stroke-width="2"/>`).join("")}</g>`;
     case "graph-paper":
       return `<g>${lines(11, true, w, h)}${lines(9, false, h, w)}</g>`;
+    case "polar-grid":
+      return `<g><circle cx="${w / 2}" cy="${h / 2}" r="90" fill="none" stroke="#38bdf8" stroke-opacity="0.48" stroke-width="2"/><circle cx="${w / 2}" cy="${h / 2}" r="180" fill="none" stroke="#38bdf8" stroke-opacity="0.48" stroke-width="2"/><circle cx="${w / 2}" cy="${h / 2}" r="270" fill="none" stroke="#38bdf8" stroke-opacity="0.48" stroke-width="2"/><path d="M${w / 2} 40V${h - 40}M40 ${h / 2}H${w - 40}" stroke="#0f172a" stroke-opacity="0.85" stroke-width="4"/><path d="M${w / 2 - 180} ${h / 2 - 180}L${w / 2 + 180} ${h / 2 + 180}M${w / 2 + 180} ${h / 2 - 180}L${w / 2 - 180} ${h / 2 + 180}" stroke="#38bdf8" stroke-opacity="0.35" stroke-width="2"/></g>`;
+    case "coordinate-plane":
+      return `<g>${lines(11, true, w, h)}${lines(9, false, h, w)}<path d="M${w / 2} 40V${h - 40}M40 ${h / 2}H${w - 40}" stroke="#0f172a" stroke-opacity="0.9" stroke-width="4"/><path d="M${w - 40} ${h / 2}l-14 -7M${w - 40} ${h / 2}l-14 7M40 ${h / 2}l14 -7M40 ${h / 2}l14 7M${w / 2} 40l-7 14M${w / 2} 40l7 14M${w / 2} ${h - 40}l-7 -14M${w / 2} ${h - 40}l7 -14" stroke="#0f172a" stroke-opacity="0.9" stroke-width="3"/></g>`;
     case "hex-grid":
       return hexes(w, h);
     case "lined-paper":
       return `<g>${lines(10, false, h, w, "#64748b", "0.45")}<path d="M110 30V${h - 30}" stroke="#ef4444" stroke-opacity="0.55" stroke-width="3"/></g>`;
+    case "cornell-notes":
+      return `<g>${lines(10, false, h, w, "#64748b", "0.45")}<path d="M${w * 0.3} 40V${h - 140}" stroke="#0f172a" stroke-opacity="0.9" stroke-width="4"/><path d="M40 ${h - 140}H${w - 40}" stroke="#0f172a" stroke-opacity="0.9" stroke-width="4"/></g>`;
     case "checklist":
       return `<g>${lines(9, false, h, w, "#64748b", "0.42")}${Array.from({ length: 9 }, (_, i) => `<rect x="70" y="${80 + i * 56}" width="24" height="24" fill="none" stroke="#0f172a" stroke-opacity="0.75" stroke-width="3"/>`).join("")}</g>`;
     case "music-staff":

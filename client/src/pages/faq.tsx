@@ -2,7 +2,8 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { templates } from '@/content';
+import { getSitePageByPath, templates } from '@/content';
+import { usePageMetadata } from '@/hooks/use-page-metadata';
 
 interface FAQItem {
   question: string;
@@ -102,6 +103,10 @@ const faqSchema = {
 };
 
 export default function FAQ() {
+  // FAQ is a sitemap site page, but it previously set no metadata on
+  // client-side navigation, leaving the previous page's canonical.
+  usePageMetadata(getSitePageByPath('/faq'));
+
   return (
     <div className="min-h-screen bg-sidebar text-foreground">
       <JsonLd data={faqSchema} />
