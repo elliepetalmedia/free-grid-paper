@@ -16,6 +16,7 @@ import { setCanonicalAndRobots } from '@/hooks/use-page-metadata';
 import { Grid } from 'lucide-react';
 import { getSitePageByPath, getTemplateByPaperType, getTemplateByPath, getTopNavTemplates, templates } from '@/content';
 import { PAGE_SIZES } from '@/generator/page-sizes';
+import { COORDINATE_PLANE_MARGIN_MM } from '@/generator/constants';
 import { DEFAULT_SETTINGS } from '@/generator/settings';
 import type { PageSize, PaperType, Settings, Unit } from '@/generator/types';
 
@@ -467,14 +468,15 @@ export default function Home() {
   const drawCoordinatePlane = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     // Mirror drawCoordinatePlanePDF: centred grid, major lines and
     // labels every five units, bold axes with arrowheads at both ends,
-    // all inside the same 6 mm printable margin, so canvas and PDF agree.
+    // all inside the same printable margin, so canvas and PDF agree.
+    // The margin is shared with the PDF renderer, not hardcoded here.
     // Canvas coordinates here are in millimetres, so label sizes are
     // small numbers in the same units as the rulers use.
     const gridSize = Math.max(1, Math.min(20, settings.gridSize));
     const weight = Math.max(0.1, Math.min(2, settings.lineWeight));
     const centerX = width / 2;
     const centerY = height / 2;
-    const margin = 6;
+    const margin = COORDINATE_PLANE_MARGIN_MM;
     const leftEdge = margin;
     const rightEdge = width - margin;
     const topEdge = margin;

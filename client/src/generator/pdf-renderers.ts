@@ -1,5 +1,8 @@
 import type { jsPDF } from 'jspdf';
+import { COORDINATE_PLANE_MARGIN_MM } from './constants';
 import type { PaperType, Settings } from './types';
+
+export { COORDINATE_PLANE_MARGIN_MM };
 
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -206,8 +209,6 @@ function drawGraphPaperPDF(doc: jsPDF, width: number, height: number, opts: Sett
   for (let x = 0; x <= width; x += gridSize) doc.line(x, 0, x, height);
   for (let y = 0; y <= height; y += gridSize) doc.line(0, y, width, y);
 }
-
-export const COORDINATE_PLANE_MARGIN_MM = 6;
 
 function drawCoordinatePlanePDF(doc: jsPDF, width: number, height: number, opts: Settings) {
   // Four-quadrant plane centred on the page. Grid lines are counted

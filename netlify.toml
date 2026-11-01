@@ -1,5 +1,18 @@
+# Build pipeline: TypeScript checks and regression tests run first,
+# and the deploy fails if either fails. This command calls the
+# package build script once, so there is no recursion: the package
+# script itself does not call this Netlify command, it only builds
+# previews, the client, the prerendered pages, the _headers file,
+# and the production server. No separate CI is added.
+# Non-production indexing: the build also runs scripts/write-headers,
+# which writes X-Robots-Tag: noindex to dist/public/_headers for
+# deploy-preview and branch-deploy contexts only, and removes it
+# for production. Netlify already adds that header to Deploy
+# Previews, but not to the most recent branch deploy, and client
+# robots meta only covers HTML pages, so the header step closes
+# both gaps without touching production indexing.
 [build]
-command = "npm run build"
+command = "npm run check && npm test && npm run build"
 publish = "dist/public"
 functions = "dist"
 
