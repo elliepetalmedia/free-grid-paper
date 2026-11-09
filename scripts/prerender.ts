@@ -578,12 +578,32 @@ async function prerender() {
   // noindex,nofollow, matching the client NotFound page, and no
   // canonical is added, because a 404 has no canonical of its own.
   // The template has no canonical link, so none can leak in here.
-  const config404 = { title: '404 Not Found - FreeGridPaper', desc: 'The page you are looking for could not be found.' };
+  //
+  // The static body below is meaningful content for visitors whose
+  // JavaScript is disabled or fails to load: a heading, a brief
+  // explanation, and a homepage link. It is inserted OUTSIDE the
+  // React root, marked data-prerender-only, exactly like the
+  // prerendered body on real pages. client/index.html hides
+  // [data-prerender-only] once the app adds the app-ready class
+  // in main.tsx, before React mounts, so a JavaScript-enabled
+  // visitor never sees it and React never touches it: no duplicate
+  // content, and no hydration involved (the app uses createRoot,
+  // not hydrateRoot). The classes are the same ones the client
+  // NotFound card already uses, so they exist in the built CSS.
+  // The static title matches the client NotFound title
+  // ('404 Page Not Found | FreeGridPaper'), which the client hook
+  // sets on mount; previously the static title was the different
+  // '404 Not Found - FreeGridPaper', which is why a live preview
+  // showed a different title before and after JavaScript ran.
+  const config404 = { title: '404 Page Not Found | FreeGridPaper', desc: 'The page you are looking for could not be found.' };
   let html404 = templateHtml.replace(/<title>(.*?)<\/title>/, `<title>${config404.title}</title>`);
   html404 = html404.replace(
     /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
     `<meta name="description" content="${config404.desc}" />\n<meta name="robots" content="noindex,nofollow" />`,
   );
+  const static404Body =
+    '<main data-prerender-only="true"><div class="min-h-screen w-full flex items-center justify-center bg-gray-50"><div class="w-full max-w-md mx-4"><h1 class="text-2xl font-bold text-gray-900">404 Page Not Found</h1><p class="mt-4 text-sm text-gray-600">The page you are looking for could not be found.</p><p class="mt-4 text-sm text-gray-600"><a href="/">Return to the homepage</a></p></div></div></main>';
+  html404 = html404.replace('<div id="root"></div>', `${static404Body}<div id="root"></div>`);
   fs.writeFileSync(path.resolve(distPath, 'not-found.html'), html404, 'utf-8');
   fs.writeFileSync(path.resolve(distPath, '404.html'), html404, 'utf-8');
   console.log('Generated not-found.html and 404.html');

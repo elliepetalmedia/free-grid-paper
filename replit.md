@@ -97,7 +97,8 @@ Preferred communication style: Simple, everyday language.
 
 **Routing:**
 - Client-side routing handled by Wouter
-- Server falls back to index.html for SPA behavior
+- In development only, the dev server falls back to index.html for SPA behavior
+- In production, every real route is a prerendered static file; unknown URLs return the custom 404 page with a 404 status (Netlify serves 404.html, Express serves not-found.html), never the homepage shell
 - Static pages served directly via Express static middleware
 - Quick Download preset routes: /graph, /dot-grid, /hex-paper, /music-staff, /engineering, /poster-size, /poster-hex, /calligraphy, /knitting
 - FAQ page at /faq with collapsible accordion sections

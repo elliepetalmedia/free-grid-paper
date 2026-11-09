@@ -82,6 +82,9 @@ The prerender output also generates:
 - `llms-full.txt`
 - segmented sitemap files
 - `data/template-specs.json`
+- `404.html` and `not-found.html`, identical, with static 404 content (heading, explanation, homepage link), `noindex,nofollow`, and no canonical
+
+Routing and redirects: there is no SPA fallback. Netlify serves prerendered files, the three legacy phantom paths 301 to their real pages, and unknown URLs return the custom 404 with a 404 status; `netlify.toml` is the sole source of truth for redirects. The PWA service worker has no navigation fallback (`navigateFallback: null` in `vite.config.ts`). See `NETLIFY_DEPLOYMENT.md` for the full routing model, the PWA behaviour, and the production-versus-preview indexing safeguards.
 
 ## Out Of Scope
 
