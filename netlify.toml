@@ -1,15 +1,14 @@
-# Build pipeline: TypeScript checks run first, then the build,
-# then the regression tests, and the deploy fails if any of them
-# fails. Tests run AFTER the build on purpose: tests/build-outputs
-# verifies what the build actually produced in dist/public (every
-# prerendered page, the sitemaps, the 404 pages, the service
-# worker, and the indexing headers), so it needs a fresh dist to
-# test against, and it fails loudly if dist is missing. This
-# command calls the package build script once, so there is no
-# recursion: the package script itself does not call this Netlify
-# command, it only builds previews, the client, the prerendered
-# pages, the _headers file, and the production server. No separate
-# CI is added.
+# Build pipeline: `npm test` runs the full workflow once: type
+# check, build, unit tests, then build-output tests against the
+# fresh dist. The deploy fails if any step fails. Tests run AFTER
+# the build on purpose: tests/build-outputs verifies what the
+# build actually produced in dist/public (every prerendered page,
+# the sitemaps, the 404 pages, the service worker, and the
+# indexing headers), so it needs a fresh dist to test against,
+# and it fails loudly if dist is missing. The build runs exactly
+# once: `npm test` calls `npm run build` internally, and no
+# script calls `npm test` back, so there is no recursion and no
+# duplicate build. No separate CI is added.
 # Non-production indexing: the build also runs scripts/write-headers,
 # which writes X-Robots-Tag: noindex to dist/public/_headers for
 # deploy-preview and branch-deploy contexts only, and removes it
@@ -18,7 +17,7 @@
 # robots meta only covers HTML pages, so the header step closes
 # both gaps without touching production indexing.
 [build]
-command = "npm run check && npm run build && npm test"
+command = "npm test"
 publish = "dist/public"
 functions = "dist"
 

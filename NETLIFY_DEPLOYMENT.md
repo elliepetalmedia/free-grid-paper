@@ -31,7 +31,7 @@ This repo is deployed from git. There is no deploy archive: the old `freegridpap
 3. **Done!**
    - Netlify will automatically:
      - Run `npm install` to install dependencies
-     - Run `npm run check && npm run build && npm test` to check, build, and test
+     - Run `npm test` to check, build, and test (one workflow, one build)
      - Serve the built files from `dist/public`
    - Your site will be live in a few minutes!
 
@@ -69,7 +69,7 @@ freegridpaper-netlify-deploy/
 When you deploy to Netlify, it automatically:
 
 1. Runs `npm install` to install all dependencies from `package.json`
-2. Runs `npm run check && npm run build && npm test` (the build command in `netlify.toml`). Tests run after the build on purpose, because `tests/build-outputs.test.ts` verifies what the build actually produced in `dist/public`. The deploy fails if checks, build, or tests fail.
+2. Runs `npm test` (the build command in `netlify.toml`), which runs the full workflow once: type check, build, unit tests, then build-output tests. Tests run after the build on purpose, because `tests/build-outputs.test.ts` verifies what the build actually produced in `dist/public`. The deploy fails if checks, build, or tests fail, and the build runs exactly once.
 3. `npm run build` runs previews, Vite, `scripts/prerender.ts` (74 prerendered pages, segmented sitemaps, `robots.txt`, `llms.txt`, `data/template-specs.json`, `404.html` plus `not-found.html`), `scripts/write-headers.ts`, and the production server bundle.
 4. Serves static files from `dist/public`. Every real route is a prerendered file; unknown URLs return `404.html` with a 404 status; the three legacy phantom paths 301 to their real pages (see the routing model above).
 
@@ -86,14 +86,14 @@ When you deploy to Netlify, it automatically:
 
 ## Tests
 ```bash
-npm run check   # TypeScript
-npm run build   # build first, so build-output tests have a fresh dist/ to verify
-npm test        # 19+ tests: canonical, PDF generators, redirects, build outputs, write-headers
+npm test          # full workflow from a clean checkout: check, build, unit tests, build-output tests
+npm run test:unit # unit tests only (canonical, PDF generators, redirects); no build needed
+npm run test:build # build-output tests only; needs a fresh dist/, so run `npm run build` first
 ```
-The redirect and build-output tests verify `netlify.toml` directly, every prerendered page and sitemap entry, the static 404 content, the absence of a service worker navigation fallback, and the production/preview indexing headers. A live Netlify deploy preview still needs a manual check before merging a routing change: a real route returns 200, each phantom URL 301s to its real page, and an unknown URL returns 404 with the custom 404 page, in both a fresh browser session and one controlled by a previously installed service worker.
+`npm test` is the one command that works from a clean checkout: it type-checks, builds once, then runs the unit tests and the build-output tests against the fresh `dist/`. The build-output tests fail loudly if `dist/` is missing, so do not run `npm run test:build` without building first. Expected counts in the build-output tests are derived from the content registry, not hard-coded, so adding a page does not require a test edit; the one exception is the clearly labelled content-inventory guard test, which asserts the expected page-count snapshot and must be updated deliberately when content is added or removed. The `write-headers` subprocess tests invoke Node directly (`node --import tsx`, Node >= 20.6) instead of `npx`, so they work on Windows as well as Linux and macOS; Windows execution has not been run in this environment, so on Windows validate with `npm test` from a clean checkout. The redirect and build-output tests verify `netlify.toml` directly, every prerendered page and sitemap entry, the static 404 content, the absence of a service worker navigation fallback, and the production/preview indexing headers. A live Netlify deploy preview still needs a manual check before merging a routing change: a real route returns 200, each phantom URL 301s to its real page, and an unknown URL returns 404 with the custom 404 page, in both a fresh browser session and one controlled by a previously installed service worker.
 
 ## Operational caveats
-- Adding a route: add it to the content registry (`client/src/content/`), rebuild, and confirm it appears in the sitemap and as a prerendered file. Do not add a redirect for it unless it is a legacy URL with search impressions.
+- Adding a route: add it to the content registry (`client/src/content/`), rebuild, and confirm it appears in the sitemap and as a prerendered file. Do not add a redirect for it unless it is a legacy URL with search impressions. Update the content-inventory guard test in `tests/build-outputs.test.ts` deliberately to the new expected page counts; every other test derives its expectations from the registry and needs no edit.
 - Adding a redirect: add it to `netlify.toml` only, in both slash and no-slash forms, before the `/*` 404 rule, and update the expected mappings in `tests/redirects.test.ts`. Do not recreate a TypeScript mirror of the redirect list.
 - The `/*` 404 rule in `netlify.toml` is kept explicitly even though Netlify is widely documented to serve a publish-root `404.html` natively. Delete it only after a live deploy-preview check proves an unknown path still returns 404 with the custom page and no rule.
 - Do not restore the `/*` 200 SPA fallback or a PWA navigation fallback. Either one recreates the soft 404 for unknown and legacy URLs.
@@ -132,8 +132,8 @@ Before deploying, test locally:
 # Install dependencies
 npm install
 
-# TypeScript check, production build, then tests against the fresh build
-npm run check && npm run build && npm test
+# Full workflow: type check, production build, then tests against the fresh build
+npm test
 
 # Serve the built static output and check routing by hand:
 #   /           -> 200, homepage generator

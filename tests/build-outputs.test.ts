@@ -5,23 +5,56 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
-import { indexableEntries } from '../client/src/content/index';
+import { guides, indexableEntries, presets, templates } from '../client/src/content/index';
 
 // Build-output tests: these verify what npm run build actually
 // produced in dist/public, not what the source code intends.
-// They must run AFTER a build, which is why the Netlify build
-// command is `npm run check && npm run build && npm test`: tests
-// run against the fresh dist. Running them without a build fails
-// loudly with the message below, instead of silently passing on
-// stale output. Locally: run `npm run build` first, then `npm test`.
+// They run as part of `npm test`, which builds first, or
+// standalone as `npm run test:build` after `npm run build`.
+// Running them without a build fails loudly with the message
+// below, instead of silently passing on stale output.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distPath = path.join(repoRoot, 'dist', 'public');
+
+// Run scripts/write-headers.ts portably: invoking Node directly
+// through process.execPath with `--import tsx` works on Linux,
+// macOS, and Windows alike. The previous `npx tsx` invocation
+// fails on Windows, where npx resolves to a .cmd shim that
+// spawnSync cannot launch without a shell. `node --import tsx`
+// needs Node >= 20.6 (tsx 4.x). No `shell: true` is used.
+function runWriteHeaders(context: string | undefined): ReturnType<typeof spawnSync> {
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/write-headers.ts'], {
+    cwd: repoRoot,
+    env: { ...process.env, CONTEXT: context },
+    encoding: 'utf-8',
+  });
+  assert.equal(
+    result.error,
+    undefined,
+    `write-headers failed to launch for CONTEXT=${context ?? 'unset'}: ${result.error}`,
+  );
+  assert.equal(
+    result.status,
+    0,
+    `write-headers failed for CONTEXT=${context ?? 'unset'}: exit ${result.status}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`,
+  );
+  return result;
+}
 
 function requireDist(): void {
   assert.ok(
     fs.existsSync(path.join(distPath, 'index.html')),
-    'dist/public/index.html is missing: run `npm run build` before `npm test`',
+    'dist/public/index.html is missing: run `npm test` (which builds first) or `npm run build` before `npm run test:build`',
   );
+}
+
+// Expected counts are derived from the authoritative content
+// registry, never hard-coded: a legitimate new page must not
+// require a test edit. The only hard-coded counts in this file
+// live in the clearly labelled content-inventory guard test
+// below, which is an intentional snapshot, not a build check.
+function entriesByKind(kind: string) {
+  return indexableEntries.filter((entry) => entry.kind === kind);
 }
 
 // Prerender escapes HTML entities in titles and descriptions
@@ -48,15 +81,19 @@ function readDist(canonicalPath: string): string {
 
 test('every indexable route has a prerendered HTML artifact with correct metadata', () => {
   requireDist();
-  // 74 routes: templates 24, guides 19, presets 18, categories 7, pages 6.
-  assert.equal(indexableEntries.length, 74, `expected 74 indexable entries, got ${indexableEntries.length}`);
-  const byKind = new Map<string, number>();
-  for (const entry of indexableEntries) byKind.set(entry.kind, (byKind.get(entry.kind) ?? 0) + 1);
-  assert.equal(byKind.get('template'), 24);
-  assert.equal(byKind.get('guide'), 19);
-  assert.equal(byKind.get('preset'), 18);
-  assert.equal(byKind.get('category'), 7);
-  assert.equal(byKind.get('site'), 6);
+  // Registry shape, derived from the registry itself: every entry
+  // must have a unique slash canonical (root excepted), so a
+  // duplicate or missing route is caught without hard-coding how
+  // many pages the site has today.
+  assert.ok(indexableEntries.length > 0, 'the content registry has no indexable entries');
+  const canonicalPaths = indexableEntries.map((entry) => entry.canonicalPath);
+  assert.equal(new Set(canonicalPaths).size, canonicalPaths.length, 'duplicate canonical paths in the registry');
+  for (const canonicalPath of canonicalPaths) {
+    assert.ok(
+      canonicalPath === '/' || canonicalPath.endsWith('/'),
+      `canonical path ${canonicalPath} must carry a trailing slash`,
+    );
+  }
 
   for (const entry of indexableEntries) {
     const html = readDist(entry.canonicalPath);
@@ -81,35 +118,61 @@ test('every indexable route has a prerendered HTML artifact with correct metadat
   }
 });
 
+// CONTENT-INVENTORY GUARD (intentional snapshot, not a build
+// check): this is the one place that asserts exact page counts.
+// It exists to catch accidental content loss, for example a
+// deleted template or guide that the registry-derived tests
+// below would silently accept because they follow the registry.
+// When a page is legitimately added or removed, update these
+// numbers deliberately in this test only. Counts as of 2026-11-09:
+// 74 total indexable pages: templates 24, guides 19, presets 18,
+// categories 7, site pages 6.
+test('content inventory guard: registry size matches the expected snapshot', () => {
+  assert.equal(indexableEntries.length, 74, `expected 74 indexable entries, got ${indexableEntries.length}`);
+  assert.equal(entriesByKind('template').length, 24);
+  assert.equal(entriesByKind('guide').length, 19);
+  assert.equal(entriesByKind('preset').length, 18);
+  assert.equal(entriesByKind('category').length, 7);
+  assert.equal(entriesByKind('site').length, 6);
+});
+
 test('sitemap entries match the registry and the built files', () => {
   requireDist();
+  // Expected segments are derived from the registry by kind, so
+  // adding a page updates the expectation automatically; the
+  // inventory guard above is what catches accidental loss.
+  const expectedSegments: ReadonlyArray<readonly [string, string[]]> = [
+    ['sitemap-templates.xml', entriesByKind('template').map((entry) => entry.canonicalPath)],
+    ['sitemap-presets.xml', entriesByKind('preset').map((entry) => entry.canonicalPath)],
+    ['sitemap-guides.xml', entriesByKind('guide').map((entry) => entry.canonicalPath)],
+    ['sitemap-categories.xml', entriesByKind('category').map((entry) => entry.canonicalPath)],
+    ['sitemap-pages.xml', entriesByKind('site').map((entry) => entry.canonicalPath)],
+  ];
   const indexXml = fs.readFileSync(path.join(distPath, 'sitemap.xml'), 'utf-8');
-  const expectedSegments = [
-    ['sitemap-templates.xml', 24],
-    ['sitemap-presets.xml', 18],
-    ['sitemap-guides.xml', 19],
-    ['sitemap-categories.xml', 7],
-    ['sitemap-pages.xml', 6],
-  ] as const;
-  for (const [fileName, count] of expectedSegments) {
+  const indexedFiles = [...indexXml.matchAll(/<loc>[^<]*\/([^<]+\.xml)<\/loc>/g)].map((match) => match[1]);
+  assert.deepEqual(
+    [...indexedFiles].sort(),
+    expectedSegments.map(([fileName]) => fileName).sort(),
+    'sitemap index must list exactly the five expected segment files',
+  );
+  const allLocs: string[] = [];
+  for (const [fileName, expectedPaths] of expectedSegments) {
     assert.ok(indexXml.includes(`/${fileName}`), `sitemap index is missing ${fileName}`);
     const xml = fs.readFileSync(path.join(distPath, fileName), 'utf-8');
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
-    assert.equal(locs.length, count, `${fileName} should list ${count} URLs, got ${locs.length}`);
+    // Set equality, not just a count: a missing, duplicate, or
+    // unexpected URL fails, and the comparison is order-free.
+    const expectedLocs = expectedPaths.map((pathname) => `https://freegridpaper.com${pathname}`);
+    assert.equal(new Set(locs).size, locs.length, `${fileName} lists duplicate URLs`);
+    assert.deepEqual([...locs].sort(), [...expectedLocs].sort(), `${fileName} does not match its registry entries`);
     for (const loc of locs) {
       const url = new URL(loc);
       assert.equal(url.origin, 'https://freegridpaper.com', `${loc} is not a production URL`);
       assert.ok(fs.existsSync(distFileFor(url.pathname)), `sitemap URL ${loc} has no prerendered file`);
-      assert.ok(
-        indexableEntries.some((entry) => entry.canonicalPath === url.pathname),
-        `sitemap URL ${loc} is not an indexable canonical path`,
-      );
     }
+    allLocs.push(...locs);
   }
-  const allLocs = expectedSegments
-    .flatMap(([fileName]) => [...fs.readFileSync(path.join(distPath, fileName), 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g)])
-    .map((match) => match[1]);
-  assert.equal(allLocs.length, 74);
+  assert.equal(allLocs.length, indexableEntries.length, 'total sitemap URLs must equal the registry size');
   for (const phantom of ['/templates/poster-hex/', '/graph-paper/', '/guides/how-to-print-grid-paper/']) {
     assert.ok(!allLocs.includes(`https://freegridpaper.com${phantom}`), `phantom ${phantom} must not be in the sitemap`);
   }
@@ -204,12 +267,7 @@ test('production and preview indexing protections in built output', () => {
       ['branch-deploy', true, 'X-Robots-Tag: noindex, nofollow'],
     ] as const) {
       if (fs.existsSync(headersPath)) fs.unlinkSync(headersPath);
-      const result = spawnSync('npx', ['tsx', 'scripts/write-headers.ts'], {
-        cwd: repoRoot,
-        env: { ...process.env, CONTEXT: context },
-        encoding: 'utf-8',
-      });
-      assert.equal(result.status, 0, `write-headers failed for CONTEXT=${context}: ${result.stderr}`);
+      runWriteHeaders(context);
       assert.equal(fs.existsSync(headersPath), expectFile, `CONTEXT=${context} _headers presence is wrong`);
       if (expectContent) {
         assert.ok(fs.readFileSync(headersPath, 'utf-8').includes(expectContent));
@@ -217,12 +275,7 @@ test('production and preview indexing protections in built output', () => {
     }
     // Unset CONTEXT leaves a _headers file unchanged.
     fs.writeFileSync(headersPath, 'sentinel\n');
-    const unset = spawnSync('npx', ['tsx', 'scripts/write-headers.ts'], {
-      cwd: repoRoot,
-      env: { ...process.env, CONTEXT: undefined },
-      encoding: 'utf-8',
-    });
-    assert.equal(unset.status, 0, `write-headers failed for unset CONTEXT: ${unset.stderr}`);
+    runWriteHeaders(undefined);
     assert.equal(fs.readFileSync(headersPath, 'utf-8'), 'sentinel\n', 'unset CONTEXT must leave _headers unchanged');
   } finally {
     if (originalHeaders === null) {
@@ -238,14 +291,47 @@ test('built discovery files and template specs are present and consistent', () =
   for (const fileName of ['llms.txt', 'llms-full.txt', 'robots.txt']) {
     assert.ok(fs.existsSync(path.join(distPath, fileName)), `dist/public/${fileName} is missing`);
   }
+  // template-specs.json must mirror the registry exactly: same
+  // entries by id and by canonical path, no missing or extra
+  // entries. Counts are derived from the registry, so adding a
+  // page updates the expectation automatically.
   const specs = JSON.parse(fs.readFileSync(path.join(distPath, 'data', 'template-specs.json'), 'utf-8')) as {
-    templates: unknown[];
-    presets: unknown[];
-    guides: unknown[];
+    templates: Array<{ id: string; path: string }>;
+    presets: Array<{ id: string; path: string }>;
+    guides: Array<{ id: string; path: string }>;
   };
-  assert.equal(specs.templates.length, 24);
-  assert.equal(specs.presets.length, 18);
-  assert.equal(specs.guides.length, 19);
+  for (const [specEntries, registryEntries, label] of [
+    [specs.templates, templates, 'templates'],
+    [specs.presets, presets, 'presets'],
+    [specs.guides, guides, 'guides'],
+  ] as const) {
+    assert.deepEqual(
+      [...specEntries.map((entry) => entry.id)].sort(),
+      [...registryEntries.map((entry) => entry.id)].sort(),
+      `template-specs.json ${label} ids do not match the registry`,
+    );
+    assert.deepEqual(
+      [...specEntries.map((entry) => entry.path)].sort(),
+      [...registryEntries.map((entry) => `https://freegridpaper.com${entry.canonicalPath}`)].sort(),
+      `template-specs.json ${label} paths do not match the registry`,
+    );
+  }
+  // llms-full.txt must list every template, guide, and category
+  // canonical URL from the registry, and llms.txt must point at
+  // the sitemap and the full discovery file.
+  const llmsFull = fs.readFileSync(path.join(distPath, 'llms-full.txt'), 'utf-8');
+  for (const entry of [...templates, ...guides, ...entriesByKind('category')]) {
+    assert.ok(
+      llmsFull.includes(`https://freegridpaper.com${entry.canonicalPath}`),
+      `llms-full.txt is missing ${entry.canonicalPath}`,
+    );
+  }
+  const llms = fs.readFileSync(path.join(distPath, 'llms.txt'), 'utf-8');
+  assert.ok(llms.includes('https://freegridpaper.com/sitemap.xml'), 'llms.txt is missing the sitemap URL');
+  assert.ok(
+    llms.includes('https://freegridpaper.com/data/template-specs.json'),
+    'llms.txt is missing the template-specs URL',
+  );
 });
 
 test('no prerendered page links to a phantom URL or a missing internal path', () => {
@@ -267,7 +353,16 @@ test('no prerendered page links to a phantom URL or a missing internal path', ()
     }
   };
   walk(distPath);
-  assert.ok(htmlFiles.length >= 74, `expected at least 74 prerendered HTML files, got ${htmlFiles.length}`);
+  // Exactly one index.html per visible registry entry: a missing
+  // file means a route was not prerendered, and an extra one means
+  // unexpected output. 404.html and not-found.html are not named
+  // index.html, so they are not counted here.
+  const expectedHtmlFiles = indexableEntries.filter((entry) => entry.indexable).length;
+  assert.equal(
+    htmlFiles.length,
+    expectedHtmlFiles,
+    `expected ${expectedHtmlFiles} prerendered HTML files, got ${htmlFiles.length}`,
+  );
 
   for (const file of htmlFiles) {
     const html = fs.readFileSync(file, 'utf-8');
