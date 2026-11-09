@@ -569,14 +569,24 @@ async function prerender() {
   fs.writeFileSync(path.resolve(dataDir, 'template-specs.json'), JSON.stringify(buildTemplateSpecExport(), null, 2), 'utf-8');
   console.log('Generated template-specs.json');
 
+  // The 404 page is written twice, with identical content, because
+  // the two hosts that serve it look in different places: the
+  // Express production server serves not-found.html with a 404
+  // status (see server/index-prod.ts), and Netlify serves 404.html
+  // with a 404 status for paths no redirect or static file matches
+  // (see the /* rule in netlify.toml). The robots value is
+  // noindex,nofollow, matching the client NotFound page, and no
+  // canonical is added, because a 404 has no canonical of its own.
+  // The template has no canonical link, so none can leak in here.
   const config404 = { title: '404 Not Found - FreeGridPaper', desc: 'The page you are looking for could not be found.' };
   let html404 = templateHtml.replace(/<title>(.*?)<\/title>/, `<title>${config404.title}</title>`);
   html404 = html404.replace(
     /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
-    `<meta name="description" content="${config404.desc}" />\n<meta name="robots" content="noindex" />`,
+    `<meta name="description" content="${config404.desc}" />\n<meta name="robots" content="noindex,nofollow" />`,
   );
   fs.writeFileSync(path.resolve(distPath, 'not-found.html'), html404, 'utf-8');
-  console.log('Generated not-found.html');
+  fs.writeFileSync(path.resolve(distPath, '404.html'), html404, 'utf-8');
+  console.log('Generated not-found.html and 404.html');
 }
 
 prerender().catch((err) => {
