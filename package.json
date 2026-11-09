@@ -11,7 +11,9 @@
     "build": "npm run previews && vite build && npm run prerender && npm run headers && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
-    "test": "tsx --test tests/*.test.ts",
+    "test:unit": "tsx --test tests/canonical.test.ts tests/pdf-generators.test.ts tests/redirects.test.ts",
+    "test:build": "tsx --test tests/build-outputs.test.ts",
+    "test": "npm run check && npm run build && npm run test:unit && npm run test:build",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

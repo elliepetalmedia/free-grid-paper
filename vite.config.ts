@@ -19,6 +19,26 @@ export default defineConfig({
         theme_color: '#ffffff',
       },
       workbox: {
+        // No navigation fallback: vite-plugin-pwa defaults
+        // navigateFallback to "index.html", which makes Workbox
+        // serve the precached homepage shell for every navigation,
+        // including unknown URLs and legacy phantom URLs, before
+        // any request reaches Netlify. That silently bypasses the
+        // Netlify 301 redirects and the 404 rule for any browser
+        // controlled by the service worker, recreating the soft
+        // 404 this site removed. Setting navigateFallback to null
+        // means no NavigationRoute is generated at all, so
+        // navigations go to the network and Netlify serves the
+        // prerendered page, the 301, or the 404 as appropriate.
+        // The NetworkFirst document cache below is preserved: it
+        // only caches successful (200) responses, so it cannot
+        // mask a live 301 or 404. Old workers migrate
+        // automatically via registerType 'autoUpdate' (skipWaiting
+        // and clientsClaim), plus cleanupOutdatedCaches; no manual
+        // unregister or cache purge is needed, though a browser
+        // that never revisits while online keeps the old worker
+        // until it does.
+        navigateFallback: null,
         runtimeCaching: [
           {
             urlPattern: ({ request }: any) => request.destination === 'document',
